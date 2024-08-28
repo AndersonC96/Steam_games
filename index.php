@@ -1,8 +1,10 @@
 <?php
     require 'vendor/autoload.php';
     require 'steam_api.php';
-    $username = 'AndersonC96';
-    $apiKey = 'ABB2DF2C7A82FC38765A0CC192B77798';
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+    $dotenv->load();
+    $username = $_ENV['STEAM_USERNAME'];
+    $apiKey = $_ENV['STEAM_API_KEY'];
     $detalhesJogos = getUserGameDetails($username, $apiKey);
     if(is_string($detalhesJogos)){
         echo $detalhesJogos;
