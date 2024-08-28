@@ -14,6 +14,7 @@
             echo "<h2>{$jogo['nome']} ({$jogo['conquistas']})</h2>";
             echo "<p><strong>Tempo jogado:</strong> {$jogo['tempo_jogado']}</p>";
             echo "<p><strong>Descrição:</strong> {$jogo['descricao']}</p>";
+            echo "<p><strong>Data de lançamento:</strong> {$jogo['data_lancamento']}</p>";
             echo "<p><strong>Preço atual:</strong> {$jogo['preco_atual']}</p>";
             echo "<hr>";
         }
