@@ -10,12 +10,11 @@
         echo $detalhesJogos;
     }else{
         foreach($detalhesJogos as $jogo){
-            echo "<h2>{$jogo['nome']}</h2>";
             echo "<img src='{$jogo['capa']}' alt='Capa do jogo' style='width:200px;height:auto;'>";
+            echo "<h2>{$jogo['nome']} | {$jogo['conquistas']}</h2>";
             echo "<p><strong>Tempo jogado:</strong> {$jogo['tempo_jogado']}</p>";
-            echo "<p><strong>Preço atual:</strong> {$jogo['preco_atual']}</p>";
             echo "<p><strong>Descrição:</strong> {$jogo['descricao']}</p>";
-            echo "<p><strong>Conquistas:</strong> {$jogo['conquistas']}</p>";
+            echo "<p><strong>Preço atual:</strong> {$jogo['preco_atual']}</p>";
             echo "<hr>";
         }
     }
