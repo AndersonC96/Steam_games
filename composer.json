@@ -1,0 +1,17 @@
+{
+    "name": "anderson/steam_games",
+    "autoload": {
+        "psr-4": {
+            "Anderson\\SteamGames\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Anderson Cavalcante Barbosa",
+            "email": "8729281+AndersonC96@users.noreply.github.com"
+        }
+    ],
+    "require": {
+        "guzzlehttp/guzzle": "^7.9"
+    }
+}
