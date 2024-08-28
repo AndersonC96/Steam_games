@@ -45,7 +45,7 @@
                 $unlocked = 0;
             }
         }catch(GuzzleHttp\Exception\ClientException $e){
-            return "0/0 Conquistas";
+            return "0 / 0 Conquistas";
         }
         try{
             $response = $client->request('GET', "https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/", [
@@ -59,7 +59,7 @@
         }catch(GuzzleHttp\Exception\ClientException $e){
             $total = 0;
         }
-        return "{$unlocked}/{$total} Conquistas";
+        return "{$unlocked} / {$total} Conquistas";
     }
     function formatPlaytime($minutes){
         if($minutes === 0){
