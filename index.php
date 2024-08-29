@@ -9,9 +9,14 @@
     if (is_string($detalhesJogos)) {
         echo $detalhesJogos;
     } else {
-        foreach ($detalhesJogos as $jogo) {
+        echo "<h1>Perfil do Usuário</h1>";
+        echo "<p><strong>Nome de Usuário:</strong> {$detalhesJogos['profile']['username']}</p>";
+        echo "<p><strong>Data de Criação:</strong> {$detalhesJogos['profile']['account_created']}</p>";
+        echo "<img src='{$detalhesJogos['profile']['avatar']}' alt='Avatar do Usuário' style='width:100px;height:auto;'><br><br>";
+        echo "<h2>Jogos</h2>";
+        foreach ($detalhesJogos['games'] as $jogo) {
             echo "<img src='{$jogo['capa']}' alt='Capa do jogo' style='width:200px;height:auto;'>";
-            echo "<h2>{$jogo['nome']} ({$jogo['conquistas']})</h2>";
+            echo "<h3>{$jogo['nome']} ({$jogo['conquistas']})</h3>";
             echo "<p><strong>Tempo jogado:</strong> {$jogo['tempo_jogado']}</p>";
             echo "<p><strong>Descrição:</strong> {$jogo['descricao']}</p>";
             echo "<p><strong>Data de lançamento:</strong> {$jogo['data_lancamento']}</p>";
