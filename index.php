@@ -6,10 +6,10 @@
     $username = $_ENV['STEAM_USERNAME'];
     $apiKey = $_ENV['STEAM_API_KEY'];
     $detalhesJogos = getUserGameDetails($username, $apiKey);
-    if(is_string($detalhesJogos)){
+    if (is_string($detalhesJogos)) {
         echo $detalhesJogos;
-    }else{
-        foreach($detalhesJogos as $jogo){
+    } else {
+        foreach ($detalhesJogos as $jogo) {
             echo "<img src='{$jogo['capa']}' alt='Capa do jogo' style='width:200px;height:auto;'>";
             echo "<h2>{$jogo['nome']} ({$jogo['conquistas']})</h2>";
             echo "<p><strong>Tempo jogado:</strong> {$jogo['tempo_jogado']}</p>";
