@@ -26,9 +26,9 @@
         ]);
         return json_decode($response->getBody(), true)['response']['games'] ?? [];
     }
-    function getAchievements($steamId, $appId, $apiKey){
+    function getAchievements($steamId, $appId, $apiKey) {
         $client = new Client();
-        try{
+        try {
             $response = $client->request('GET', "https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/", [
                 'query' => [
                     'key' => $apiKey,
@@ -64,15 +64,21 @@
         }
         return "{$unlocked}/{$total} Conquistas";
     }
-    function formatPlaytime($minutes){
+    function formatPlaytime($minutes) {
         if ($minutes === 0) {
             return "não jogado";
+        } elseif ($minutes === 1) {
+            return "1 minuto";
         } elseif ($minutes < 60) {
             return "{$minutes} minutos";
         } else {
             $hours = floor($minutes / 60);
             $remainingMinutes = $minutes % 60;
-            return "{$hours} horas e {$remainingMinutes} minutos";
+            if ($remainingMinutes === 1) {
+                return "{$hours} horas e 1 minuto";
+            } else {
+                return "{$hours} horas e {$remainingMinutes} minutos";
+            }
         }
     }
     function getGameDetails($steamId, $appId, $apiKey) {
@@ -87,7 +93,7 @@
             return [
                 'price' => 'Preço não disponível',
                 'description' => 'Descrição não disponível',
-                'image' => 'img/padrao.png', // Caminho para a imagem padrão
+                'image' => 'img/padrao.png',
                 'achievements' => 'Jogo sem conquistas',
                 'release_date' => 'Data de lançamento não disponível',
             ];
