@@ -73,8 +73,8 @@
                         echo "<div class='glass-card p-6 rounded-lg text-center'>";
                         echo "<h2 class='text-2xl font-semibold mb-4'>{$detalhesJogos['profile']['username']}</h2>";
                         echo "<img src='{$detalhesJogos['profile']['avatar']}' alt='Avatar do Usuário' class='w-32 h-32 rounded-full mx-auto mb-4'>";
-                        echo "<p class='text-lg mb-2'><strong>Data de Criação:</strong> {$detalhesJogos['profile']['account_created']}</p>";
-                        echo "<p class='text-lg font-semibold'><strong>Valor Total dos Jogos:</strong> R$ " . number_format($valorTotal, 2, ',', '.') . "</p>";
+                        echo "<p class='text-lg mb-2'><strong>Conta criada em</strong>: {$detalhesJogos['profile']['account_created']}</p>";
+                        echo "<p class='text-lg font-semibold'><strong>Valor Total dos Jogos</strong>: R$ " . number_format($valorTotal, 2, ',', '.') . "</p>";
                         echo "</div>";
                         echo "</div>";
                         $itemsPerPage = 12;
@@ -100,10 +100,10 @@
                             echo "<div class='glass-card p-4 rounded-lg'>";
                             echo "<img src='{$jogo['capa']}' alt='Capa do jogo' class='w-full h-auto mb-4 rounded'>";
                             echo "<h4 class='text-lg font-semibold mb-2'>{$jogo['nome']} ({$jogo['conquistas']})</h4>";
-                            echo "<p><strong>Tempo jogado:</strong> {$jogo['tempo_jogado']}</p>";
-                            echo "<p><strong>Descrição:</strong> {$jogo['descricao']}</p>";
-                            echo "<p><strong>Data de lançamento:</strong> {$jogo['data_lancamento']}</p>";
-                            echo "<p><strong>Preço atual:</strong> {$jogo['preco_atual']}</p>";
+                            echo "<p><strong>Tempo de jogo</strong>: {$jogo['tempo_jogado']}</p>";
+                            echo "<p><strong>Descrição</strong>: {$jogo['descricao']}</p>";
+                            echo "<p><strong>Data de lançamento</strong>: {$jogo['data_lancamento']}</p>";
+                            echo "<p><strong>Preço</strong>: {$jogo['preco_atual']}</p>";
                             echo "</div>";
                         }
                         echo "</div>";
