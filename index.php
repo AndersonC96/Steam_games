@@ -9,7 +9,7 @@
     if (is_string($detalhesJogos)) {
         echo $detalhesJogos;
     } else {
-        echo "<p><strong>{$detalhesJogos['profile']['username']}</p>";
+        echo "<p><strong>{$detalhesJogos['profile']['username']}</strong></p>";
         echo "<p><strong>Membro desde</strong>: {$detalhesJogos['profile']['account_created']}</p>";
         echo "<img src='{$detalhesJogos['profile']['avatar']}' alt='Avatar do Usuário' style='width:100px;height:auto;'><br><br>";
         echo "<h2>Jogos</h2>";
