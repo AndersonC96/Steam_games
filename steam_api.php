@@ -85,7 +85,7 @@
     }
     function formatPlaytime($minutes) {
         if ($minutes === 0) {
-            return "não jogado";
+            return "Não jogado";
         } elseif ($minutes === 1) {
             return "1 minuto";
         } elseif ($minutes < 60) {
