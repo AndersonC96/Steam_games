@@ -98,7 +98,7 @@
         $releaseDate = isset($gameData['release_date']['date']) ? $gameData['release_date']['date'] : 'Data de lançamento não disponível';
         return [
             'price' => $gameData['price_overview']['final_formatted'] ?? 'Preço não disponível',
-            'description' => $gameData['short_description'] ?? 'Descrição não disponível',
+            'description' => $gameData['detailed_description'] ?? 'Descrição não disponível',
             'image' => $image,
             'achievements' => $achievements,
             'release_date' => $releaseDate,
