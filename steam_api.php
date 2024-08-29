@@ -14,6 +14,25 @@
         }
         return null;
     }
+    function getUserProfile($steamId, $apiKey) {
+        $client = new Client();
+        $response = $client->request('GET', 'https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/', [
+            'query' => [
+                'key' => $apiKey,
+                'steamids' => $steamId,
+            ],
+        ]);
+        $data = json_decode($response->getBody(), true);
+        if (isset($data['response']['players'][0])) {
+            $player = $data['response']['players'][0];
+            return [
+                'username' => $player['personaname'] ?? 'Nome não disponível',
+                'avatar' => $player['avatarfull'] ?? 'img/avatar_padrao.png', // Imagem padrão para avatar
+                'account_created' => isset($player['timecreated']) ? date('d/m/Y', $player['timecreated']) : 'Data de criação não disponível',
+            ];
+        }
+        return null;
+    }
     function getSteamUserGames($steamId, $apiKey) {
         $client = new Client();
         $response = $client->request('GET', 'https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/', [
@@ -115,14 +134,21 @@
         if (!$steamId) {
             return "Usuário não encontrado.";
         }
+        $profile = getUserProfile($steamId, $apiKey);
+        if (!$profile) {
+            return "Perfil do usuário não encontrado.";
+        }
         $games = getSteamUserGames($steamId, $apiKey);
         if (empty($games)) {
             return "Nenhum jogo encontrado para este usuário.";
         }
-        $result = [];
+        $result = [
+            'profile' => $profile,
+            'games' => []
+        ];
         foreach ($games as $game) {
             $details = getGameDetails($steamId, $game['appid'], $apiKey);
-            $result[] = [
+            $result['games'][] = [
                 'nome' => $game['name'],
                 'tempo_jogado' => formatPlaytime($game['playtime_forever']),
                 'preco_atual' => $details['price'],
