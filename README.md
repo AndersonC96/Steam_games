@@ -1,12 +1,12 @@
 # Steam Library Explorer
 
-Projeto pessoal em PHP que criei para praticar integração com a Steam Web API e transformar os dados em uma interface agradável de explorar.
+Aplicação em PHP para análise de bibliotecas Steam, com foco em integração de APIs, performance e experiência de navegação.
 
 ![Steam Logo](https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Steam_icon_logo.svg/1024px-Steam_icon_logo.svg.png)
 
 ## Visão Geral
 
-A ideia aqui foi simples: pegar um username da Steam e mostrar tudo de forma clara, sem cara de dashboard engessado.
+O sistema consulta um usuário da Steam, agrega dados públicos de perfil e catálogo, aplica enriquecimento com dados de loja e entrega uma visualização filtrável para exploração rápida.
 
 Você informa um usuário da Steam e o sistema retorna:
 
@@ -15,18 +15,18 @@ Você informa um usuário da Steam e o sistema retorna:
 - estatísticas gerais como horas totais e valor estimado da biblioteca;
 - ordenação dinâmica e paginação.
 
-## O que eu trabalhei aqui
+## Principais Entregas
 
-- integração com Steam Web API e Steam Store API;
-- estrutura simples de manter e evoluir;
-- tratamento de exceções de requisições HTTP;
-- cache local em arquivo para acelerar buscas repetidas;
-- ordenação por preço, data e tempo jogado com parsing dos dados;
-- UI responsiva com estilo autoral.
+- integração entre Steam Web API e Steam Store API;
+- tratamento de exceções e fallback para chamadas externas;
+- cache local em arquivo para reduzir latência em consultas recorrentes;
+- ordenação por preço, data e tempo jogado com normalização de dados;
+- filtros combinados para recorte de biblioteca;
+- interface responsiva com navegação orientada a leitura rápida.
 
-## Melhorias recentes
+## Recursos Implementados
 
-- botão de demo para abrir um perfil de exemplo rapidamente;
+- modo demo para validação rápida da interface;
 - filtros por status de jogo (jogados/não jogados), preço e conquistas;
 - indicador de origem dos dados (cache local ou Steam API em tempo real);
 - estado vazio amigável quando filtros não retornam jogos.

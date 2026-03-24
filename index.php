@@ -160,21 +160,21 @@ if (is_array($detalhesJogos)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Steam Library Explorer | Projeto Pessoal</title>
+    <title>Steam Portfolio Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #0f1722;
-            --bg-soft: #182536;
-            --panel: rgba(21, 34, 50, 0.88);
-            --line: rgba(132, 168, 204, 0.24);
-            --text: #e8edf4;
-            --muted: #a7b6c7;
-            --accent: #ffb347;
-            --accent-soft: #ffd89d;
-            --danger: #ff7373;
+            --bg: #f3f6fb;
+            --bg-soft: #ffffff;
+            --panel: #ffffff;
+            --line: #d8e1ec;
+            --text: #1f2b3a;
+            --muted: #627386;
+            --accent: #1d70f2;
+            --accent-soft: #4a93ff;
+            --danger: #d23f3f;
         }
 
         * {
@@ -185,9 +185,7 @@ if (is_array($detalhesJogos)) {
             margin: 0;
             color: var(--text);
             font-family: 'IBM Plex Sans', sans-serif;
-            background:
-                linear-gradient(180deg, #131e2e 0%, #0f1722 100%),
-                repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.015) 0, rgba(255, 255, 255, 0.015) 1px, transparent 1px, transparent 14px);
+            background: var(--bg);
             min-height: 100vh;
         }
 
@@ -204,11 +202,11 @@ if (is_array($detalhesJogos)) {
             gap: 14px;
             align-items: center;
             justify-content: space-between;
-            background: rgba(8, 17, 31, 0.78);
+            background: var(--bg-soft);
             border: 1px solid var(--line);
             border-radius: 12px;
             padding: 16px;
-            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
+            box-shadow: 0 6px 18px rgba(26, 42, 61, 0.08);
         }
 
         .brand {
@@ -226,7 +224,7 @@ if (is_array($detalhesJogos)) {
         .brand-title {
             font-family: 'IBM Plex Mono', monospace;
             margin: 0;
-            font-size: 1rem;
+            font-size: 1.02rem;
             letter-spacing: 0.01em;
         }
 
@@ -247,7 +245,7 @@ if (is_array($detalhesJogos)) {
         .search input,
         .sort-select {
             border: 1px solid var(--line);
-            background: rgba(12, 26, 48, 0.85);
+            background: #fff;
             color: var(--text);
             border-radius: 10px;
             padding: 12px 14px;
@@ -258,7 +256,7 @@ if (is_array($detalhesJogos)) {
         .search input:focus,
         .sort-select:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(39, 208, 245, 0.15);
+            box-shadow: 0 0 0 3px rgba(29, 112, 242, 0.15);
         }
 
         .button {
@@ -267,7 +265,7 @@ if (is_array($detalhesJogos)) {
             padding: 12px 20px;
             font: 600 0.95rem 'IBM Plex Sans', sans-serif;
             letter-spacing: 0.02em;
-            color: #2b1a00;
+            color: #fff;
             background: linear-gradient(120deg, var(--accent), var(--accent-soft));
             cursor: pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -275,7 +273,7 @@ if (is_array($detalhesJogos)) {
 
         .button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(255, 179, 71, 0.26);
+            box-shadow: 0 8px 20px rgba(29, 112, 242, 0.26);
         }
 
         .button-secondary {
@@ -286,15 +284,15 @@ if (is_array($detalhesJogos)) {
             border-radius: 10px;
             padding: 12px 16px;
             font: 600 0.9rem 'IBM Plex Sans', sans-serif;
-            color: var(--text);
-            border: 1px solid rgba(255, 255, 255, 0.24);
-            background: rgba(255, 255, 255, 0.07);
+            color: #24415f;
+            border: 1px solid #c8d6e7;
+            background: #fff;
             transition: all 0.2s ease;
         }
 
         .button-secondary:hover {
             border-color: var(--accent);
-            color: #ffe5bf;
+            color: var(--accent);
             transform: translateY(-2px);
         }
 
@@ -302,19 +300,16 @@ if (is_array($detalhesJogos)) {
             margin: 20px 0 16px;
             border-radius: 12px;
             border: 1px solid var(--line);
-            background:
-                linear-gradient(120deg, rgba(26, 40, 58, 0.95) 0%, rgba(16, 27, 41, 0.95) 60%),
-                url('https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1400&q=80') center/cover;
+            background: #fff;
             padding: 28px;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 16px 34px rgba(0, 0, 0, 0.26);
+            box-shadow: 0 6px 16px rgba(26, 42, 61, 0.06);
         }
 
         .hero h2 {
             margin: 0;
             font: 700 1.75rem/1.2 'IBM Plex Sans', sans-serif;
             max-width: 760px;
+            color: #162334;
         }
 
         .hero p {
@@ -324,40 +319,11 @@ if (is_array($detalhesJogos)) {
             margin: 12px 0 0;
         }
 
-        .chips {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 14px;
-        }
-
-        .build-badge {
-            display: inline-block;
-            margin-top: 10px;
-            font-size: 0.76rem;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            color: #2a1a00;
-            background: linear-gradient(120deg, #ffd08a, #ffe7c4);
-            border-radius: 999px;
-            padding: 6px 10px;
-            font-weight: 700;
-        }
-
-        .chip {
-            font-size: 0.82rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #e8eef8;
-            padding: 8px 12px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.06);
-        }
-
         .alert {
             margin-top: 14px;
-            border: 1px solid rgba(255, 115, 115, 0.4);
-            background: rgba(80, 18, 18, 0.45);
-            color: #ffd2d2;
+            border: 1px solid #f2cccc;
+            background: #fff3f3;
+            color: #8a2e2e;
             border-radius: 12px;
             padding: 14px 16px;
         }
@@ -374,9 +340,9 @@ if (is_array($detalhesJogos)) {
         }
 
         .profile-card {
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid #e3ebf4;
             border-radius: 10px;
-            background: rgba(7, 18, 32, 0.62);
+            background: #fafcff;
             padding: 18px;
         }
 
@@ -390,7 +356,7 @@ if (is_array($detalhesJogos)) {
             width: 76px;
             height: 76px;
             border-radius: 12px;
-            border: 2px solid rgba(255, 179, 71, 0.45);
+            border: 2px solid rgba(29, 112, 242, 0.25);
             object-fit: cover;
         }
 
@@ -414,8 +380,8 @@ if (is_array($detalhesJogos)) {
 
         .stat {
             border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(12, 26, 48, 0.7);
+            border: 1px solid #e3ebf4;
+            background: #fafcff;
             padding: 14px;
         }
 
@@ -464,9 +430,9 @@ if (is_array($detalhesJogos)) {
             font-size: 0.78rem;
             padding: 5px 8px;
             border-radius: 999px;
-            border: 1px solid rgba(255, 255, 255, 0.16);
-            color: #f7ddae;
-            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid #d5e4fb;
+            color: #285ea7;
+            background: #eef5ff;
         }
 
         .games-grid {
@@ -479,14 +445,14 @@ if (is_array($detalhesJogos)) {
             border: 1px solid var(--line);
             border-radius: 12px;
             overflow: hidden;
-            background: rgba(8, 19, 34, 0.82);
-            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
+            background: #fff;
+            box-shadow: 0 6px 18px rgba(26, 42, 61, 0.06);
             transition: transform 0.25s ease, border-color 0.25s ease;
         }
 
         .game:hover {
             transform: translateY(-5px);
-            border-color: rgba(255, 179, 71, 0.65);
+            border-color: rgba(29, 112, 242, 0.45);
         }
 
         .game-image {
@@ -508,7 +474,7 @@ if (is_array($detalhesJogos)) {
 
         .game-ach {
             margin: 6px 0 10px;
-            color: #ffd28e;
+            color: #2f6cbc;
             font-size: 0.86rem;
         }
 
@@ -546,19 +512,19 @@ if (is_array($detalhesJogos)) {
             padding: 8px 12px;
             min-width: 40px;
             text-align: center;
-            background: rgba(12, 26, 48, 0.75);
+            background: #fff;
             transition: all 0.2s ease;
         }
 
         .page-link:hover {
             border-color: var(--accent);
-            color: #ffe5bf;
+            color: var(--accent);
         }
 
         .page-link.active {
             border-color: transparent;
             background: linear-gradient(120deg, var(--accent), var(--accent-soft));
-            color: #2a1a00;
+            color: #fff;
             font-weight: 700;
         }
 
@@ -620,7 +586,7 @@ if (is_array($detalhesJogos)) {
                 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Steam_icon_logo.svg/1024px-Steam_icon_logo.svg.png" alt="Logo Steam">
                 <div>
                     <h1 class="brand-title">steam_library_explorer.php</h1>
-                    <p class="brand-subtitle">um projeto pessoal em evolução</p>
+                    <p class="brand-subtitle">Steam API integration with filtering, pagination and cache</p>
                 </div>
             </div>
 
@@ -635,19 +601,12 @@ if (is_array($detalhesJogos)) {
                 >
                 <button type="submit" class="button">Buscar</button>
             </form>
-            <a class="button-secondary" href="?username=gaben&order_by=tempo_jogado">carregar demo</a>
+            <a class="button-secondary" href="?username=gaben&order_by=tempo_jogado">Demo rápida</a>
         </header>
 
         <section class="hero">
-            <h2>Montei esse app para estudar integrações com a Steam API sem abrir mão de um visual agradável.</h2>
-            <p>Ele busca perfil, jogos, conquistas e preços. Os filtros e o cache foram surgindo conforme eu fui usando no dia a dia.</p>
-            <span class="build-badge">build local: 2026.03.23</span>
-            <div class="chips">
-                <span class="chip">php + composer</span>
-                <span class="chip">steam web api</span>
-                <span class="chip">cache local em arquivo</span>
-                <span class="chip">filtros de biblioteca</span>
-            </div>
+            <h2>Dashboard de biblioteca Steam com foco em experiência de uso e performance.</h2>
+            <p>Busca de perfil, enriquecimento de catálogo, filtros combinados e cache local para reduzir latência em consultas recorrentes.</p>
         </section>
 
         <?php if ($errorMessage !== ''): ?>
