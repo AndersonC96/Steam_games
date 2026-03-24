@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Anderson\SteamGames\Services;
 
+use Anderson\SteamGames\Services\Contracts\SteamApiInterface;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
-final class SteamApiService
+final class SteamApiService implements SteamApiInterface
 {
     public function __construct(
         private readonly CacheService $cacheService,

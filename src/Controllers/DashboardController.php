@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Anderson\SteamGames\Controllers;
 
-use Anderson\SteamGames\Services\SteamApiService;
-use Anderson\SteamGames\Support\TextHelper;
+use Anderson\SteamGames\Services\Contracts\SteamApiInterface;
+use Anderson\SteamGames\Services\GameCatalogService;
 
 final class DashboardController
 {
     public function __construct(
-        private readonly SteamApiService $steamApiService,
+        private readonly SteamApiInterface $steamApiService,
+        private readonly GameCatalogService $gameCatalogService,
         private readonly array $config,
         private readonly string $rootPath
     ) {
@@ -87,51 +88,12 @@ final class DashboardController
             $dataSourceLabel = $detalhesJogos['meta']['source'] ?? '';
             $totalGamesBeforeFilter = count($games);
 
-            $games = array_values(array_filter($games, static function (array $jogo) use ($playedFilter, $priceFilter, $achievementFilter): bool {
-                $minutes = (int) ($jogo['tempo_jogado_minutos'] ?? 0);
-                $price = TextHelper::parsePrice((string) ($jogo['preco_atual'] ?? 'Preço não disponível'));
-                $hasAchievements = isset($jogo['conquistas']) && $jogo['conquistas'] !== 'Jogo sem conquistas';
+            $games = $this->gameCatalogService->applyFilters($games, $playedFilter, $priceFilter, $achievementFilter);
+            $games = $this->gameCatalogService->sortGames($games, $orderBy);
 
-                if ($playedFilter === 'jogados' && $minutes <= 0) {
-                    return false;
-                }
-
-                if ($playedFilter === 'nao_jogados' && $minutes > 0) {
-                    return false;
-                }
-
-                if ($priceFilter === 'gratis' && $price > 0) {
-                    return false;
-                }
-
-                if ($priceFilter === 'pagos' && $price <= 0) {
-                    return false;
-                }
-
-                if ($achievementFilter === 'com' && !$hasAchievements) {
-                    return false;
-                }
-
-                if ($achievementFilter === 'sem' && $hasAchievements) {
-                    return false;
-                }
-
-                return true;
-            }));
-
-            usort($games, static function (array $a, array $b) use ($orderBy): int {
-                return match ($orderBy) {
-                    'nome' => strcmp((string) $a['nome'], (string) $b['nome']),
-                    'data_lancamento' => (int) strtotime((string) ($b['data_lancamento'] ?? '')) <=> (int) strtotime((string) ($a['data_lancamento'] ?? '')),
-                    'preco_atual' => TextHelper::parsePrice((string) $b['preco_atual']) <=> TextHelper::parsePrice((string) $a['preco_atual']),
-                    default => ((int) ($b['tempo_jogado_minutos'] ?? 0)) <=> ((int) ($a['tempo_jogado_minutos'] ?? 0)),
-                };
-            });
-
-            foreach ($games as $jogo) {
-                $totalMinutes += (int) ($jogo['tempo_jogado_minutos'] ?? 0);
-                $totalValue += TextHelper::parsePrice((string) ($jogo['preco_atual'] ?? 'Preço não disponível'));
-            }
+            $totals = $this->gameCatalogService->totals($games);
+            $totalMinutes = (int) $totals['total_minutes'];
+            $totalValue = (float) $totals['total_value'];
 
             $totalGames = count($games);
             $totalPages = max(1, (int) ceil($totalGames / $itemsPerPage));

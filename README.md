@@ -35,6 +35,26 @@ Você informa um usuário da Steam e o sistema retorna:
 - alternância de tema claro/escuro com persistência local;
 - estado vazio amigável quando filtros não retornam jogos.
 
+## Demonstração
+
+- Recomendado para portfólio: incluir um GIF curto de 10-15 segundos com o fluxo `buscar perfil -> aplicar filtros -> copiar URL`.
+- Caminho sugerido para versionar mídia no projeto: `docs/demo/`.
+- Captura sugerida: OBS Studio ou ShareX em 1280x720, 24fps.
+
+## Arquitetura
+
+```mermaid
+flowchart LR
+	U[Browser] --> P[public/index.php]
+	P --> C[DashboardController]
+	C --> S[SteamApiService]
+	C --> G[GameCatalogService]
+	S --> K[CacheService]
+	S --> A[Steam Web API + Store API]
+	C --> V[views/dashboard.php]
+	V --> AS[assets css/js]
+```
+
 ## Stack
 
 - PHP 8+
@@ -90,11 +110,15 @@ http://localhost:8000
 .
 ├── public/
 │   └── index.php
+│   └── assets/
+│       ├── css/dashboard.css
+│       └── js/dashboard.js
 ├── src/
 │   ├── Controllers/
 │   │   └── DashboardController.php
 │   ├── Services/
 │   │   ├── CacheService.php
+│   │   ├── GameCatalogService.php
 │   │   └── SteamApiService.php
 │   └── Support/
 │       └── TextHelper.php
@@ -105,15 +129,25 @@ http://localhost:8000
 ├── config/
 │   └── app.php
 ├── index.php
-├── steam_api.php (legado)
 ├── composer.json
 ├── .env
 ├── cache/
 ├── img/
+├── tests/
+│   ├── Unit/
+│   └── run.php
 └── vendor/
 ```
 
 Observação: [index.php](index.php) foi mantido como entrypoint compatível e delega para [public/index.php](public/index.php).
+
+## Testes
+
+Execute a suíte de testes unitários leves:
+
+```bash
+php tests/run.php
+```
 
 ## Próximos passos
 
