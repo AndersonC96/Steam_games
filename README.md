@@ -88,14 +88,32 @@ http://localhost:8000
 
 ```bash
 .
+├── public/
+│   └── index.php
+├── src/
+│   ├── Controllers/
+│   │   └── DashboardController.php
+│   ├── Services/
+│   │   ├── CacheService.php
+│   │   └── SteamApiService.php
+│   └── Support/
+│       └── TextHelper.php
+├── views/
+│   └── dashboard.php
+├── bootstrap/
+│   └── app.php
+├── config/
+│   └── app.php
 ├── index.php
-├── steam_api.php
+├── steam_api.php (legado)
 ├── composer.json
 ├── .env
 ├── cache/
 ├── img/
 └── vendor/
 ```
+
+Observação: [index.php](index.php) foi mantido como entrypoint compatível e delega para [public/index.php](public/index.php).
 
 ## Próximos passos
 
