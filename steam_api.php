@@ -2,6 +2,53 @@
     use GuzzleHttp\Client;
     use GuzzleHttp\Exception\GuzzleException;
 
+    function cacheDirectory() {
+        $dir = __DIR__ . '/cache';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+        return $dir;
+    }
+
+    function cacheFilePath($namespace, $key) {
+        $safeNamespace = preg_replace('/[^a-z0-9_\-]/i', '_', (string) $namespace);
+        $hash = sha1((string) $key);
+        return cacheDirectory() . '/' . $safeNamespace . '_' . $hash . '.json';
+    }
+
+    function cacheRead($namespace, $key, $ttlSeconds) {
+        $filePath = cacheFilePath($namespace, $key);
+        if (!is_file($filePath)) {
+            return null;
+        }
+
+        $raw = file_get_contents($filePath);
+        if ($raw === false) {
+            return null;
+        }
+
+        $cached = json_decode($raw, true);
+        if (!is_array($cached) || !isset($cached['saved_at']) || !array_key_exists('payload', $cached)) {
+            return null;
+        }
+
+        if ((time() - (int) $cached['saved_at']) > $ttlSeconds) {
+            return null;
+        }
+
+        return $cached['payload'];
+    }
+
+    function cacheWrite($namespace, $key, $payload) {
+        $filePath = cacheFilePath($namespace, $key);
+        $data = [
+            'saved_at' => time(),
+            'payload' => $payload,
+        ];
+
+        file_put_contents($filePath, json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    }
+
     function steamClient() {
         return new Client([
             'timeout' => 12,
@@ -175,6 +222,17 @@
     }
 
     function getUserGameDetails($username, $apiKey) {
+        $cacheKey = strtolower(trim($username));
+        $cacheTtlSeconds = 900;
+        $cachedResult = cacheRead('user_games', $cacheKey, $cacheTtlSeconds);
+        if (is_array($cachedResult)) {
+            $cachedResult['meta'] = [
+                'source' => 'cache',
+                'cache_ttl' => $cacheTtlSeconds,
+            ];
+            return $cachedResult;
+        }
+
         $steamId = getSteamUserId($username, $apiKey);
         if (!$steamId) {
             return "Usuário não encontrado.";
@@ -199,7 +257,7 @@
             $result['games'][] = [
                 'nome' => $game['name'],
                 'tempo_jogado_minutos' => (int) ($game['playtime_forever'] ?? 0),
-                'tempo_jogado' => formatPlaytime($game['playtime_forever']),
+                'tempo_jogado' => formatPlaytime((int) ($game['playtime_forever'] ?? 0)),
                 'preco_atual' => $details['price'],
                 'descricao' => $details['description'],
                 'capa' => $details['image'],
@@ -207,6 +265,12 @@
                 'data_lancamento' => $details['release_date'],
             ];
         }
+
+        $result['meta'] = [
+            'source' => 'live',
+            'cache_ttl' => $cacheTtlSeconds,
+        ];
+        cacheWrite('user_games', $cacheKey, $result);
 
         return $result;
     }

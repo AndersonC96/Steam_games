@@ -35,6 +35,19 @@ function cleanDescription(string $text, int $maxLength = 180): string {
 $allowedOrders = ['nome', 'data_lancamento', 'tempo_jogado', 'preco_atual'];
 $orderBy = $_GET['order_by'] ?? 'tempo_jogado';
 $orderBy = in_array($orderBy, $allowedOrders, true) ? $orderBy : 'tempo_jogado';
+
+$allowedPlayed = ['todos', 'jogados', 'nao_jogados'];
+$playedFilter = $_GET['played_filter'] ?? 'todos';
+$playedFilter = in_array($playedFilter, $allowedPlayed, true) ? $playedFilter : 'todos';
+
+$allowedPrice = ['todos', 'gratis', 'pagos'];
+$priceFilter = $_GET['price_filter'] ?? 'todos';
+$priceFilter = in_array($priceFilter, $allowedPrice, true) ? $priceFilter : 'todos';
+
+$allowedAchievements = ['todos', 'com', 'sem'];
+$achievementFilter = $_GET['achievement_filter'] ?? 'todos';
+$achievementFilter = in_array($achievementFilter, $allowedAchievements, true) ? $achievementFilter : 'todos';
+
 $currentPage = max(1, (int) ($_GET['page'] ?? 1));
 
 $errorMessage = '';
@@ -73,12 +86,48 @@ $profile = [];
 $itemsPerPage = 9;
 $totalPages = 1;
 $totalGames = 0;
+$totalGamesBeforeFilter = 0;
 $totalMinutes = 0;
 $totalValue = 0.0;
+$dataSourceLabel = '';
 
 if (is_array($detalhesJogos)) {
     $games = $detalhesJogos['games'];
     $profile = $detalhesJogos['profile'];
+    $dataSourceLabel = $detalhesJogos['meta']['source'] ?? '';
+    $totalGamesBeforeFilter = count($games);
+
+    $games = array_values(array_filter($games, static function ($jogo) use ($playedFilter, $priceFilter, $achievementFilter): bool {
+        $minutes = (int) ($jogo['tempo_jogado_minutos'] ?? 0);
+        $price = parsePrice((string) ($jogo['preco_atual'] ?? 'Preço não disponível'));
+        $hasAchievements = isset($jogo['conquistas']) && $jogo['conquistas'] !== 'Jogo sem conquistas';
+
+        if ($playedFilter === 'jogados' && $minutes <= 0) {
+            return false;
+        }
+
+        if ($playedFilter === 'nao_jogados' && $minutes > 0) {
+            return false;
+        }
+
+        if ($priceFilter === 'gratis' && $price > 0) {
+            return false;
+        }
+
+        if ($priceFilter === 'pagos' && $price <= 0) {
+            return false;
+        }
+
+        if ($achievementFilter === 'com' && !$hasAchievements) {
+            return false;
+        }
+
+        if ($achievementFilter === 'sem' && $hasAchievements) {
+            return false;
+        }
+
+        return true;
+    }));
 
     usort($games, static function ($a, $b) use ($orderBy): int {
         switch ($orderBy) {
@@ -252,6 +301,26 @@ if (is_array($detalhesJogos)) {
             box-shadow: 0 8px 24px rgba(39, 208, 245, 0.34);
         }
 
+        .button-secondary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font: 600 0.9rem 'Space Grotesk', sans-serif;
+            color: var(--text);
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            background: rgba(255, 255, 255, 0.07);
+            transition: all 0.2s ease;
+        }
+
+        .button-secondary:hover {
+            border-color: var(--accent);
+            color: var(--accent-soft);
+            transform: translateY(-2px);
+        }
+
         .hero {
             margin: 28px 0 18px;
             border-radius: 24px;
@@ -409,6 +478,29 @@ if (is_array($detalhesJogos)) {
             margin: 0;
             font-family: 'Space Grotesk', sans-serif;
             font-size: 1.12rem;
+        }
+
+        .control-stack {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .control-form {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .cache-tag {
+            font-size: 0.78rem;
+            padding: 5px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            color: #dbf4ff;
+            background: rgba(255, 255, 255, 0.08);
         }
 
         .games-grid {
@@ -577,6 +669,7 @@ if (is_array($detalhesJogos)) {
                 >
                 <button type="submit" class="button">Buscar perfil</button>
             </form>
+            <a class="button-secondary" href="?username=gaben&order_by=tempo_jogado">Ver demo</a>
         </header>
 
         <section class="hero">
@@ -625,35 +718,73 @@ if (is_array($detalhesJogos)) {
             </section>
 
             <section class="controls">
-                <h4>Jogos exibidos na página <?php echo e($currentPage); ?> de <?php echo e($totalPages); ?></h4>
-                <form method="GET" action="">
+                <div class="control-stack">
+                    <h4>
+                        Jogos exibidos na página <?php echo e($currentPage); ?> de <?php echo e($totalPages); ?>
+                        (<?php echo e($totalGames); ?> de <?php echo e($totalGamesBeforeFilter); ?> após filtros)
+                    </h4>
+                    <?php if ($dataSourceLabel === 'cache'): ?>
+                        <span class="cache-tag">Origem: cache local</span>
+                    <?php elseif ($dataSourceLabel === 'live'): ?>
+                        <span class="cache-tag">Origem: Steam API</span>
+                    <?php endif; ?>
+                </div>
+
+                <form method="GET" action="" class="control-form">
                     <input type="hidden" name="username" value="<?php echo e($username); ?>">
-                    <label for="order_by">Ordenar por </label>
+                    <label for="order_by">Ordenar</label>
                     <select id="order_by" name="order_by" class="sort-select" onchange="this.form.submit()">
                         <option value="tempo_jogado"<?php echo $orderBy === 'tempo_jogado' ? ' selected' : ''; ?>>Tempo jogado</option>
                         <option value="preco_atual"<?php echo $orderBy === 'preco_atual' ? ' selected' : ''; ?>>Preço atual</option>
                         <option value="data_lancamento"<?php echo $orderBy === 'data_lancamento' ? ' selected' : ''; ?>>Data de lançamento</option>
                         <option value="nome"<?php echo $orderBy === 'nome' ? ' selected' : ''; ?>>Nome</option>
                     </select>
+
+                    <label for="played_filter">Jogo</label>
+                    <select id="played_filter" name="played_filter" class="sort-select" onchange="this.form.submit()">
+                        <option value="todos"<?php echo $playedFilter === 'todos' ? ' selected' : ''; ?>>Todos</option>
+                        <option value="jogados"<?php echo $playedFilter === 'jogados' ? ' selected' : ''; ?>>Jogados</option>
+                        <option value="nao_jogados"<?php echo $playedFilter === 'nao_jogados' ? ' selected' : ''; ?>>Não jogados</option>
+                    </select>
+
+                    <label for="price_filter">Preço</label>
+                    <select id="price_filter" name="price_filter" class="sort-select" onchange="this.form.submit()">
+                        <option value="todos"<?php echo $priceFilter === 'todos' ? ' selected' : ''; ?>>Todos</option>
+                        <option value="gratis"<?php echo $priceFilter === 'gratis' ? ' selected' : ''; ?>>Grátis</option>
+                        <option value="pagos"<?php echo $priceFilter === 'pagos' ? ' selected' : ''; ?>>Pagos</option>
+                    </select>
+
+                    <label for="achievement_filter">Conquistas</label>
+                    <select id="achievement_filter" name="achievement_filter" class="sort-select" onchange="this.form.submit()">
+                        <option value="todos"<?php echo $achievementFilter === 'todos' ? ' selected' : ''; ?>>Todos</option>
+                        <option value="com"<?php echo $achievementFilter === 'com' ? ' selected' : ''; ?>>Com</option>
+                        <option value="sem"<?php echo $achievementFilter === 'sem' ? ' selected' : ''; ?>>Sem</option>
+                    </select>
                 </form>
             </section>
 
             <section class="games-grid">
-                <?php foreach ($games as $jogo): ?>
-                    <article class="game">
-                        <img class="game-image" src="<?php echo e($jogo['capa']); ?>" alt="Capa de <?php echo e($jogo['nome']); ?>">
-                        <div class="game-content">
-                            <h5 class="game-title"><?php echo e($jogo['nome']); ?></h5>
-                            <p class="game-ach"><?php echo e($jogo['conquistas']); ?></p>
-                            <p class="game-description"><?php echo e(cleanDescription($jogo['descricao'])); ?></p>
-                            <div class="game-meta">
-                                <span><strong>Tempo:</strong> <?php echo e($jogo['tempo_jogado']); ?></span>
-                                <span><strong>Lançamento:</strong> <?php echo e($jogo['data_lancamento']); ?></span>
-                                <span><strong>Preço:</strong> <?php echo e($jogo['preco_atual']); ?></span>
+                <?php if (empty($games)): ?>
+                    <div class="alert" style="grid-column: 1 / -1; margin: 0;">
+                        Nenhum jogo corresponde aos filtros selecionados. Tente ajustar os filtros para ampliar os resultados.
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($games as $jogo): ?>
+                        <article class="game">
+                            <img class="game-image" src="<?php echo e($jogo['capa']); ?>" alt="Capa de <?php echo e($jogo['nome']); ?>">
+                            <div class="game-content">
+                                <h5 class="game-title"><?php echo e($jogo['nome']); ?></h5>
+                                <p class="game-ach"><?php echo e($jogo['conquistas']); ?></p>
+                                <p class="game-description"><?php echo e(cleanDescription($jogo['descricao'])); ?></p>
+                                <div class="game-meta">
+                                    <span><strong>Tempo:</strong> <?php echo e($jogo['tempo_jogado']); ?></span>
+                                    <span><strong>Lançamento:</strong> <?php echo e($jogo['data_lancamento']); ?></span>
+                                    <span><strong>Preço:</strong> <?php echo e($jogo['preco_atual']); ?></span>
+                                </div>
                             </div>
-                        </div>
-                    </article>
-                <?php endforeach; ?>
+                        </article>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </section>
 
             <?php if ($totalPages > 1): ?>
@@ -661,7 +792,7 @@ if (is_array($detalhesJogos)) {
                     <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                         <a
                             class="page-link<?php echo $i === $currentPage ? ' active' : ''; ?>"
-                            href="?username=<?php echo urlencode($username); ?>&order_by=<?php echo urlencode($orderBy); ?>&page=<?php echo $i; ?>"
+                            href="?username=<?php echo urlencode($username); ?>&order_by=<?php echo urlencode($orderBy); ?>&played_filter=<?php echo urlencode($playedFilter); ?>&price_filter=<?php echo urlencode($priceFilter); ?>&achievement_filter=<?php echo urlencode($achievementFilter); ?>&page=<?php echo $i; ?>"
                         >
                             <?php echo $i; ?>
                         </a>

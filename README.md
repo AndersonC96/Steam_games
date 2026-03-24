@@ -20,8 +20,16 @@ Você informa um usuário da Steam e o sistema retorna:
 - integração com Steam Web API e Steam Store API;
 - arquitetura simples e legível para estudo e evolução;
 - tratamento de exceções de requisições HTTP;
+- cache local em arquivo para acelerar buscas repetidas;
 - normalização de dados para ordenação por preço, data e tempo jogado;
 - UI responsiva com identidade visual própria.
+
+## Recursos de Portfolio (Fase 2)
+
+- botão de demo instantânea para avaliação rápida de recrutadores;
+- filtros por status de jogo (jogados/não jogados), preço e conquistas;
+- indicador de origem dos dados (cache local ou Steam API em tempo real);
+- estado vazio amigável quando filtros não retornam jogos.
 
 ## Stack
 
@@ -80,6 +88,7 @@ http://localhost:8000
 ├── steam_api.php
 ├── composer.json
 ├── .env
+├── cache/
 ├── img/
 └── vendor/
 ```
