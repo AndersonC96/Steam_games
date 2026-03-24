@@ -1,64 +1,92 @@
-# 🚀 Steam Profile Search
+# Steam Spotlight
+
+Projeto de portfolio em PHP que consome múltiplos endpoints da Steam Web API para criar uma experiência visual de exploração de perfis e bibliotecas de jogos.
 
 ![Steam Logo](https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Steam_icon_logo.svg/1024px-Steam_icon_logo.svg.png)
 
-Steam Profile Search é um projeto em PHP que permite buscar informações de perfis da Steam, como nome de usuário, data de criação da conta, jogos, tempo jogado, conquistas, preços atuais dos jogos, e muito mais. O sistema suporta paginação, ordenação por diferentes critérios e oferece uma interface elegante com tema escuro e transparência estilo "vidro".
+## Visão Geral
 
-## 🛠️ Funcionalidades
+Steam Spotlight foi desenhado para demonstrar integração de APIs externas, tratamento de dados e construção de interface moderna com foco em apresentação profissional.
 
-- **Busca de Perfis**: Busque informações detalhadas de qualquer usuário da Steam inserindo o nome de usuário.
-- **Exibição de Jogos**: Exibe até 12 jogos por página com informações detalhadas.
-- **Ordenação Personalizada**: Ordene os jogos por nome, data de lançamento, tempo jogado ou preço atual.
-- **Tema Escuro**: Interface com tema escuro e elementos transparentes para uma experiência visual moderna.
-- **Perfil do Usuário**: Exibe informações do perfil do usuário em um card centralizado.
-- **Paginação**: Navegue por páginas de jogos com facilidade.
+Você informa um usuário da Steam e o sistema retorna:
 
-## 🧑‍💻 Tecnologias Utilizadas
+- perfil público com avatar, país e data de criação da conta;
+- biblioteca de jogos com capa, descrição, preço e conquistas;
+- estatísticas de portfolio como horas totais e valor estimado da biblioteca;
+- ordenação dinâmica e paginação.
 
-- **PHP**
-- **Tailwind CSS** (via CDN)
-- **GuzzleHTTP** (para requisições API)
-- **Steam Web API**
+## Destaques Técnicos
 
-## 🚀 Como Instalar e Executar
+- integração com Steam Web API e Steam Store API;
+- arquitetura simples e legível para estudo e evolução;
+- tratamento de exceções de requisições HTTP;
+- normalização de dados para ordenação por preço, data e tempo jogado;
+- UI responsiva com identidade visual própria.
 
-### 1. Clone o Repositório
+## Stack
+
+- PHP 8+
+- Composer
+- GuzzleHTTP
+- vlucas/phpdotenv
+- HTML/CSS (responsivo)
+
+## Endpoints Utilizados
+
+- ISteamUser/ResolveVanityURL
+- ISteamUser/GetPlayerSummaries
+- IPlayerService/GetOwnedGames
+- ISteamUserStats/GetPlayerAchievements
+- ISteamUserStats/GetSchemaForGame
+- store.steampowered.com/api/appdetails
+
+## Como Rodar Localmente
+
+1. Clone o repositório
 
 ```bash
 git clone https://github.com/AndersonC96/Steam_games.git
 cd Steam_games
 ```
 
-### 2. Instale as Dependências
-Certifique-se de ter o Composer instalado.
+2. Instale as dependências
 
 ```bash
 composer install
 ```
 
-### 3. Configuração do Ambiente
-Crie um arquivo .env na raiz do projeto e adicione suas credenciais da Steam API:
+3. Configure o arquivo .env
 
-```bash
-STEAM_API_KEY=your_steam_api_key
-STEAM_USERNAME=your_default_username
+```dotenv
+STEAM_API_KEY=sua_steam_api_key
+STEAM_USERNAME=seu_usuario_padrao
 ```
 
-### 4. Execute o Projeto
-Você pode usar o servidor embutido do PHP para rodar o projeto:
+4. Suba o servidor local
 
 ```bash
 php -S localhost:8000
 ```
 
-Agora, acesse http://localhost:8000 no seu navegador.
+5. Acesse no navegador
 
-## ⚙️ Estrutura do Projeto
+http://localhost:8000
+
+## Estrutura do Projeto
 
 ```bash
-├── vendor/              # Dependências do Composer
-├── steam_api.php        # Arquivo PHP principal para interações com a Steam API
-├── index.php            # Arquivo principal que carrega a interface e lida com as buscas
-├── .env                 # Arquivo de configuração do ambiente
-└── README.md            # Documentação do projeto
+.
+├── index.php
+├── steam_api.php
+├── composer.json
+├── .env
+├── img/
+└── vendor/
 ```
+
+## Melhorias Futuras
+
+- cache das respostas por usuário para reduzir tempo de carregamento;
+- filtros adicionais por faixa de preço e quantidade de conquistas;
+- versão com autenticação OAuth da Steam para recursos privados;
+- testes automatizados para funções de parsing e ordenação.
