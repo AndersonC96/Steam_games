@@ -1,32 +1,32 @@
-# Steam Spotlight
+# Steam Library Explorer
 
-Projeto de portfolio em PHP que consome múltiplos endpoints da Steam Web API para criar uma experiência visual de exploração de perfis e bibliotecas de jogos.
+Projeto pessoal em PHP que criei para praticar integração com a Steam Web API e transformar os dados em uma interface agradável de explorar.
 
 ![Steam Logo](https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Steam_icon_logo.svg/1024px-Steam_icon_logo.svg.png)
 
 ## Visão Geral
 
-Steam Spotlight foi desenhado para demonstrar integração de APIs externas, tratamento de dados e construção de interface moderna com foco em apresentação profissional.
+A ideia aqui foi simples: pegar um username da Steam e mostrar tudo de forma clara, sem cara de dashboard engessado.
 
 Você informa um usuário da Steam e o sistema retorna:
 
 - perfil público com avatar, país e data de criação da conta;
 - biblioteca de jogos com capa, descrição, preço e conquistas;
-- estatísticas de portfolio como horas totais e valor estimado da biblioteca;
+- estatísticas gerais como horas totais e valor estimado da biblioteca;
 - ordenação dinâmica e paginação.
 
-## Destaques Técnicos
+## O que eu trabalhei aqui
 
 - integração com Steam Web API e Steam Store API;
-- arquitetura simples e legível para estudo e evolução;
+- estrutura simples de manter e evoluir;
 - tratamento de exceções de requisições HTTP;
 - cache local em arquivo para acelerar buscas repetidas;
-- normalização de dados para ordenação por preço, data e tempo jogado;
-- UI responsiva com identidade visual própria.
+- ordenação por preço, data e tempo jogado com parsing dos dados;
+- UI responsiva com estilo autoral.
 
-## Recursos de Portfolio (Fase 2)
+## Melhorias recentes
 
-- botão de demo instantânea para avaliação rápida de recrutadores;
+- botão de demo para abrir um perfil de exemplo rapidamente;
 - filtros por status de jogo (jogados/não jogados), preço e conquistas;
 - indicador de origem dos dados (cache local ou Steam API em tempo real);
 - estado vazio amigável quando filtros não retornam jogos.
@@ -93,9 +93,9 @@ http://localhost:8000
 └── vendor/
 ```
 
-## Melhorias Futuras
+## Próximos passos
 
-- cache das respostas por usuário para reduzir tempo de carregamento;
+- cache por jogo para reduzir chamadas ao endpoint de detalhes;
 - filtros adicionais por faixa de preço e quantidade de conquistas;
 - versão com autenticação OAuth da Steam para recursos privados;
 - testes automatizados para funções de parsing e ordenação.

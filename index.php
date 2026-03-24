@@ -160,20 +160,20 @@ if (is_array($detalhesJogos)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Steam Spotlight | Portfolio Project</title>
+    <title>Steam Library Explorer | Projeto Pessoal</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #08111f;
-            --bg-soft: #0f1f36;
-            --panel: rgba(10, 22, 39, 0.72);
-            --line: rgba(139, 196, 255, 0.2);
-            --text: #e7eef8;
-            --muted: #9db3cd;
-            --accent: #27d0f5;
-            --accent-soft: #89efff;
+            --bg: #0f1722;
+            --bg-soft: #182536;
+            --panel: rgba(21, 34, 50, 0.88);
+            --line: rgba(132, 168, 204, 0.24);
+            --text: #e8edf4;
+            --muted: #a7b6c7;
+            --accent: #ffb347;
+            --accent-soft: #ffd89d;
             --danger: #ff7373;
         }
 
@@ -184,33 +184,11 @@ if (is_array($detalhesJogos)) {
         body {
             margin: 0;
             color: var(--text);
-            font-family: 'Sora', sans-serif;
-            background: radial-gradient(circle at 20% 10%, #153057 0%, var(--bg) 45%, #050b16 100%);
+            font-family: 'IBM Plex Sans', sans-serif;
+            background:
+                linear-gradient(180deg, #131e2e 0%, #0f1722 100%),
+                repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.015) 0, rgba(255, 255, 255, 0.015) 1px, transparent 1px, transparent 14px);
             min-height: 100vh;
-        }
-
-        body::before,
-        body::after {
-            content: '';
-            position: fixed;
-            width: 42vw;
-            height: 42vw;
-            filter: blur(70px);
-            z-index: -1;
-            opacity: 0.35;
-            pointer-events: none;
-        }
-
-        body::before {
-            background: #2eeafc;
-            top: -14vw;
-            right: -12vw;
-        }
-
-        body::after {
-            background: #6ba7ff;
-            bottom: -20vw;
-            left: -16vw;
         }
 
         .page {
@@ -228,10 +206,9 @@ if (is_array($detalhesJogos)) {
             justify-content: space-between;
             background: rgba(8, 17, 31, 0.78);
             border: 1px solid var(--line);
-            border-radius: 18px;
+            border-radius: 12px;
             padding: 16px;
-            backdrop-filter: blur(14px);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
         }
 
         .brand {
@@ -247,10 +224,10 @@ if (is_array($detalhesJogos)) {
         }
 
         .brand-title {
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'IBM Plex Mono', monospace;
             margin: 0;
-            font-size: 1.2rem;
-            letter-spacing: 0.02em;
+            font-size: 1rem;
+            letter-spacing: 0.01em;
         }
 
         .brand-subtitle {
@@ -272,7 +249,7 @@ if (is_array($detalhesJogos)) {
             border: 1px solid var(--line);
             background: rgba(12, 26, 48, 0.85);
             color: var(--text);
-            border-radius: 12px;
+            border-radius: 10px;
             padding: 12px 14px;
             font: inherit;
             outline: none;
@@ -286,11 +263,11 @@ if (is_array($detalhesJogos)) {
 
         .button {
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
             padding: 12px 20px;
-            font: 600 0.95rem 'Space Grotesk', sans-serif;
+            font: 600 0.95rem 'IBM Plex Sans', sans-serif;
             letter-spacing: 0.02em;
-            color: #01253a;
+            color: #2b1a00;
             background: linear-gradient(120deg, var(--accent), var(--accent-soft));
             cursor: pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -298,7 +275,7 @@ if (is_array($detalhesJogos)) {
 
         .button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(39, 208, 245, 0.34);
+            box-shadow: 0 8px 20px rgba(255, 179, 71, 0.26);
         }
 
         .button-secondary {
@@ -306,9 +283,9 @@ if (is_array($detalhesJogos)) {
             align-items: center;
             justify-content: center;
             text-decoration: none;
-            border-radius: 12px;
+            border-radius: 10px;
             padding: 12px 16px;
-            font: 600 0.9rem 'Space Grotesk', sans-serif;
+            font: 600 0.9rem 'IBM Plex Sans', sans-serif;
             color: var(--text);
             border: 1px solid rgba(255, 255, 255, 0.24);
             background: rgba(255, 255, 255, 0.07);
@@ -317,36 +294,26 @@ if (is_array($detalhesJogos)) {
 
         .button-secondary:hover {
             border-color: var(--accent);
-            color: var(--accent-soft);
+            color: #ffe5bf;
             transform: translateY(-2px);
         }
 
         .hero {
-            margin: 28px 0 18px;
-            border-radius: 24px;
+            margin: 20px 0 16px;
+            border-radius: 12px;
             border: 1px solid var(--line);
             background:
-                linear-gradient(120deg, rgba(14, 36, 64, 0.92) 0%, rgba(7, 19, 34, 0.9) 60%),
-                url('https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1600&q=80') center/cover;
-            padding: 34px;
+                linear-gradient(120deg, rgba(26, 40, 58, 0.95) 0%, rgba(16, 27, 41, 0.95) 60%),
+                url('https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1400&q=80') center/cover;
+            padding: 28px;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.4);
-        }
-
-        .hero::after {
-            content: '';
-            position: absolute;
-            inset: auto -80px -80px auto;
-            width: 220px;
-            height: 220px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 50%;
+            box-shadow: 0 16px 34px rgba(0, 0, 0, 0.26);
         }
 
         .hero h2 {
             margin: 0;
-            font: 700 2rem/1.12 'Space Grotesk', sans-serif;
+            font: 700 1.75rem/1.2 'IBM Plex Sans', sans-serif;
             max-width: 760px;
         }
 
@@ -361,17 +328,17 @@ if (is_array($detalhesJogos)) {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
-            margin-top: 18px;
+            margin-top: 14px;
         }
 
         .build-badge {
             display: inline-block;
-            margin-top: 12px;
+            margin-top: 10px;
             font-size: 0.76rem;
             letter-spacing: 0.05em;
             text-transform: uppercase;
-            color: #052239;
-            background: linear-gradient(120deg, #78ecff, #c3f6ff);
+            color: #2a1a00;
+            background: linear-gradient(120deg, #ffd08a, #ffe7c4);
             border-radius: 999px;
             padding: 6px 10px;
             font-weight: 700;
@@ -379,11 +346,11 @@ if (is_array($detalhesJogos)) {
 
         .chip {
             font-size: 0.82rem;
-            border: 1px solid rgba(255, 255, 255, 0.16);
-            color: #dbe8ff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #e8eef8;
             padding: 8px 12px;
             border-radius: 999px;
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.06);
         }
 
         .alert {
@@ -398,9 +365,8 @@ if (is_array($detalhesJogos)) {
         .profile {
             margin-top: 24px;
             border: 1px solid var(--line);
-            border-radius: 20px;
+            border-radius: 12px;
             background: var(--panel);
-            backdrop-filter: blur(12px);
             padding: 20px;
             display: grid;
             gap: 18px;
@@ -409,7 +375,7 @@ if (is_array($detalhesJogos)) {
 
         .profile-card {
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 14px;
+            border-radius: 10px;
             background: rgba(7, 18, 32, 0.62);
             padding: 18px;
         }
@@ -423,14 +389,14 @@ if (is_array($detalhesJogos)) {
         .avatar {
             width: 76px;
             height: 76px;
-            border-radius: 18px;
-            border: 2px solid rgba(39, 208, 245, 0.5);
+            border-radius: 12px;
+            border: 2px solid rgba(255, 179, 71, 0.45);
             object-fit: cover;
         }
 
         .profile-main h3 {
             margin: 0;
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'IBM Plex Sans', sans-serif;
             font-size: 1.25rem;
         }
 
@@ -447,7 +413,7 @@ if (is_array($detalhesJogos)) {
         }
 
         .stat {
-            border-radius: 12px;
+            border-radius: 10px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             background: rgba(12, 26, 48, 0.7);
             padding: 14px;
@@ -461,7 +427,7 @@ if (is_array($detalhesJogos)) {
         }
 
         .stat-value {
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'IBM Plex Mono', monospace;
             font-size: 1.2rem;
         }
 
@@ -476,7 +442,7 @@ if (is_array($detalhesJogos)) {
 
         .controls h4 {
             margin: 0;
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'IBM Plex Sans', sans-serif;
             font-size: 1.12rem;
         }
 
@@ -499,7 +465,7 @@ if (is_array($detalhesJogos)) {
             padding: 5px 8px;
             border-radius: 999px;
             border: 1px solid rgba(255, 255, 255, 0.16);
-            color: #dbf4ff;
+            color: #f7ddae;
             background: rgba(255, 255, 255, 0.08);
         }
 
@@ -511,16 +477,16 @@ if (is_array($detalhesJogos)) {
 
         .game {
             border: 1px solid var(--line);
-            border-radius: 16px;
+            border-radius: 12px;
             overflow: hidden;
             background: rgba(8, 19, 34, 0.82);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
             transition: transform 0.25s ease, border-color 0.25s ease;
         }
 
         .game:hover {
             transform: translateY(-5px);
-            border-color: rgba(39, 208, 245, 0.45);
+            border-color: rgba(255, 179, 71, 0.65);
         }
 
         .game-image {
@@ -536,13 +502,13 @@ if (is_array($detalhesJogos)) {
 
         .game-title {
             margin: 0;
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'IBM Plex Sans', sans-serif;
             font-size: 1.05rem;
         }
 
         .game-ach {
             margin: 6px 0 10px;
-            color: #87f4d1;
+            color: #ffd28e;
             font-size: 0.86rem;
         }
 
@@ -576,7 +542,7 @@ if (is_array($detalhesJogos)) {
             text-decoration: none;
             color: var(--text);
             border: 1px solid var(--line);
-            border-radius: 10px;
+            border-radius: 8px;
             padding: 8px 12px;
             min-width: 40px;
             text-align: center;
@@ -586,13 +552,13 @@ if (is_array($detalhesJogos)) {
 
         .page-link:hover {
             border-color: var(--accent);
-            color: var(--accent-soft);
+            color: #ffe5bf;
         }
 
         .page-link.active {
             border-color: transparent;
             background: linear-gradient(120deg, var(--accent), var(--accent-soft));
-            color: #01253a;
+            color: #2a1a00;
             font-weight: 700;
         }
 
@@ -653,8 +619,8 @@ if (is_array($detalhesJogos)) {
             <div class="brand">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Steam_icon_logo.svg/1024px-Steam_icon_logo.svg.png" alt="Logo Steam">
                 <div>
-                    <h1 class="brand-title">Steam Spotlight</h1>
-                    <p class="brand-subtitle">Projeto de portfolio em PHP consumindo Steam Web API</p>
+                    <h1 class="brand-title">steam_library_explorer.php</h1>
+                    <p class="brand-subtitle">um projeto pessoal em evolução</p>
                 </div>
             </div>
 
@@ -667,20 +633,20 @@ if (is_array($detalhesJogos)) {
                     required
                     value="<?php echo e($inputValue); ?>"
                 >
-                <button type="submit" class="button">Buscar perfil</button>
+                <button type="submit" class="button">Buscar</button>
             </form>
-            <a class="button-secondary" href="?username=gaben&order_by=tempo_jogado">Ver demo</a>
+            <a class="button-secondary" href="?username=gaben&order_by=tempo_jogado">carregar demo</a>
         </header>
 
         <section class="hero">
-            <h2>Visualize, filtre e apresente bibliotecas da Steam em uma interface moderna e pronta para portfolio.</h2>
-            <p>Este projeto reúne integração com múltiplos endpoints da Steam, paginação, ordenação e visualização de catálogo com métricas de usuário em tempo real.</p>
-            <span class="build-badge">Portfolio Build 2026.03.23</span>
+            <h2>Montei esse app para estudar integrações com a Steam API sem abrir mão de um visual agradável.</h2>
+            <p>Ele busca perfil, jogos, conquistas e preços. Os filtros e o cache foram surgindo conforme eu fui usando no dia a dia.</p>
+            <span class="build-badge">build local: 2026.03.23</span>
             <div class="chips">
-                <span class="chip">PHP + Composer</span>
-                <span class="chip">Steam Web API</span>
-                <span class="chip">Arquitetura simples e legível</span>
-                <span class="chip">UI Responsiva e animada</span>
+                <span class="chip">php + composer</span>
+                <span class="chip">steam web api</span>
+                <span class="chip">cache local em arquivo</span>
+                <span class="chip">filtros de biblioteca</span>
             </div>
         </section>
 
