@@ -550,6 +550,77 @@ if (is_array($detalhesJogos)) {
             text-decoration: underline;
         }
 
+        html[data-theme='dark'] body {
+            background:
+                radial-gradient(circle at 12% 8%, rgba(79, 172, 254, 0.16), transparent 38%),
+                radial-gradient(circle at 88% 0%, rgba(40, 199, 111, 0.12), transparent 30%),
+                var(--bg);
+        }
+
+        html[data-theme='dark'] .topbar,
+        html[data-theme='dark'] .hero,
+        html[data-theme='dark'] .kpi,
+        html[data-theme='dark'] .profile,
+        html[data-theme='dark'] .profile-card,
+        html[data-theme='dark'] .stat,
+        html[data-theme='dark'] .game,
+        html[data-theme='dark'] .footer,
+        html[data-theme='dark'] .page-link,
+        html[data-theme='dark'] .sort-select,
+        html[data-theme='dark'] .search input,
+        html[data-theme='dark'] .button-secondary {
+            background-color: #1b2637;
+            border-color: #33465f;
+            color: #e8edf4;
+        }
+
+        html[data-theme='dark'] .hero {
+            background-image:
+                linear-gradient(155deg, rgba(20, 33, 50, 0.96) 0%, rgba(18, 30, 46, 0.96) 100%),
+                linear-gradient(0deg, rgba(106, 166, 255, 0.08), rgba(106, 166, 255, 0.08));
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+        }
+
+        html[data-theme='dark'] .hero h2 {
+            color: #eaf2ff;
+        }
+
+        html[data-theme='dark'] .hero-note {
+            color: #8bb8ff;
+        }
+
+        html[data-theme='dark'] .button {
+            background: linear-gradient(120deg, #4f95ff, #6cb3ff);
+            color: #081220;
+        }
+
+        html[data-theme='dark'] .button:hover {
+            box-shadow: 0 10px 24px rgba(79, 149, 255, 0.35);
+        }
+
+        html[data-theme='dark'] .button-secondary:hover,
+        html[data-theme='dark'] .page-link:hover,
+        html[data-theme='dark'] .footer a {
+            color: #9ac4ff;
+        }
+
+        html[data-theme='dark'] .game:hover {
+            border-color: rgba(106, 166, 255, 0.75);
+        }
+
+        html[data-theme='dark'] .game-ach,
+        html[data-theme='dark'] .cache-tag {
+            color: #95debc;
+            border-color: rgba(149, 222, 188, 0.24);
+            background: rgba(149, 222, 188, 0.08);
+        }
+
+        html[data-theme='dark'] .alert {
+            border-color: rgba(255, 128, 128, 0.4);
+            background: rgba(111, 35, 35, 0.32);
+            color: #ffd5d5;
+        }
+
         .games-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
