@@ -28,6 +28,7 @@ final class DashboardController
         $requestedPlayedFilter = (string) ($query['played_filter'] ?? 'todos');
         $requestedPriceFilter = (string) ($query['price_filter'] ?? 'todos');
         $requestedAchievementFilter = (string) ($query['achievement_filter'] ?? 'todos');
+        $isDemoMode = isset($query['demo']) && (string) $query['demo'] === '1';
 
         $orderBy = in_array($requestedOrderBy, $allowedOrders, true) ? $requestedOrderBy : 'tempo_jogado';
         $playedFilter = in_array($requestedPlayedFilter, $allowedPlayed, true) ? $requestedPlayedFilter : 'todos';
@@ -49,7 +50,7 @@ final class DashboardController
         if (isset($query['username'])) {
             if ($username === '') {
                 $errorMessage = 'Digite um nome de usuário Steam para buscar.';
-            } elseif ($apiKey === '') {
+            } elseif ($apiKey === '' && !$isDemoMode) {
                 $errorMessage = 'A chave STEAM_API_KEY não foi encontrada no arquivo .env.';
             } else {
                 $queryStart = microtime(true);
@@ -110,6 +111,11 @@ final class DashboardController
                 'achievement_filter' => $achievementFilter,
                 'page' => $currentPage,
             ];
+
+            if ($isDemoMode) {
+                $shareParams['demo'] = '1';
+            }
+
             $shareUrl = $sharePath . '?' . http_build_query($shareParams);
         }
 
@@ -139,7 +145,8 @@ final class DashboardController
             'sessionAvgMs',
             'sessionCacheRate',
             'lastUser',
-            'shareUrl'
+            'shareUrl',
+            'isDemoMode'
         );
     }
 

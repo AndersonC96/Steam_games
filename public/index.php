@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Anderson\SteamGames\Controllers\DashboardController;
 use Anderson\SteamGames\Services\CacheService;
+use Anderson\SteamGames\Services\DemoSteamApiService;
 use Anderson\SteamGames\Services\GameCatalogService;
 use Anderson\SteamGames\Services\SteamApiService;
 
@@ -16,7 +17,12 @@ $rootPath = $app['root_path'];
 $config = $app['config'];
 
 $cacheService = new CacheService($config['cache_dir']);
-$steamApiService = new SteamApiService($cacheService, (int) $config['cache_ttl_seconds']);
+$isDemoMode = isset($_GET['demo']) && $_GET['demo'] === '1';
+
+$steamApiService = $isDemoMode
+    ? new DemoSteamApiService()
+    : new SteamApiService($cacheService, (int) $config['cache_ttl_seconds']);
+
 $gameCatalogService = new GameCatalogService();
 $controller = new DashboardController($steamApiService, $gameCatalogService, $config, $rootPath);
 

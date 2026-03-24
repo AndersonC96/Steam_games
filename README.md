@@ -117,7 +117,10 @@ http://localhost:8000
 │   ├── Controllers/
 │   │   └── DashboardController.php
 │   ├── Services/
+│   │   ├── Contracts/
+│   │   │   └── SteamApiInterface.php
 │   │   ├── CacheService.php
+│   │   ├── DemoSteamApiService.php
 │   │   ├── GameCatalogService.php
 │   │   └── SteamApiService.php
 │   └── Support/
@@ -148,6 +151,22 @@ Execute a suíte de testes unitários leves:
 ```bash
 php tests/run.php
 ```
+
+## Decisões de Arquitetura
+
+- Front Controller em `public/index.php` para centralizar bootstrap e roteamento inicial.
+- Contrato `SteamApiInterface` para desacoplar controller do provedor de dados (real ou demo).
+- `SteamApiService` dedicado a integração externa e `GameCatalogService` dedicado a regras de negócio.
+- Cache local em arquivo para reduzir latência e evitar chamadas repetidas em sequência.
+- View e assets separados para facilitar evolução de UI sem acoplar com regras PHP.
+
+## Checklist de Entrevista Técnica
+
+- Qual foi o principal gargalo de latência e como o cache mitigou o problema.
+- Como o projeto lida com falhas externas (Steam API indisponível, timeout, payload parcial).
+- Como os filtros e ordenação foram isolados no `GameCatalogService` para facilitar testes.
+- Como o modo demo (`?demo=1`) viabiliza apresentação sem depender de API key.
+- Como você evoluiria para autenticação real e observabilidade (logs, métricas, tracing).
 
 ## Próximos passos
 

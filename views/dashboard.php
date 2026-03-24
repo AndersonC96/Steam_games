@@ -27,6 +27,9 @@ use Anderson\SteamGames\Support\TextHelper;
             </div>
 
             <form method="GET" action="" class="search">
+                <?php if ($isDemoMode): ?>
+                    <input type="hidden" name="demo" value="1">
+                <?php endif; ?>
                 <input
                     type="text"
                     id="username"
@@ -38,10 +41,16 @@ use Anderson\SteamGames\Support\TextHelper;
                 <button type="submit" class="button">Buscar</button>
             </form>
             <div class="control-stack">
-                <a class="button-secondary" href="?username=gaben&order_by=tempo_jogado">Demo rápida</a>
+                <a class="button-secondary" href="?username=demo&order_by=tempo_jogado&demo=1">Demo rápida</a>
                 <button id="theme-toggle" class="button-secondary" type="button">Alternar tema</button>
             </div>
         </header>
+
+        <?php if ($isDemoMode): ?>
+            <div class="alert" style="margin-top: 16px;">
+                Modo demonstração ativo: dados fixos de portfólio para apresentação (sem chamadas externas).
+            </div>
+        <?php endif; ?>
 
         <section class="hero">
             <h2>Dashboard de biblioteca Steam com foco em experiência de uso e performance.</h2>
@@ -76,7 +85,15 @@ use Anderson\SteamGames\Support\TextHelper;
                 </article>
                 <article class="kpi">
                     <small>fonte da consulta</small>
-                    <strong><?php echo TextHelper::escape($dataSourceLabel === 'cache' ? 'cache local' : 'steam api'); ?></strong>
+                    <strong>
+                        <?php if ($dataSourceLabel === 'cache'): ?>
+                            cache local
+                        <?php elseif ($dataSourceLabel === 'demo'): ?>
+                            base demo
+                        <?php else: ?>
+                            steam api
+                        <?php endif; ?>
+                    </strong>
                 </article>
                 <article class="kpi">
                     <small>volume total do perfil</small>
@@ -130,11 +147,16 @@ use Anderson\SteamGames\Support\TextHelper;
                         <span class="cache-tag">Origem: cache local</span>
                     <?php elseif ($dataSourceLabel === 'live'): ?>
                         <span class="cache-tag">Origem: Steam API</span>
+                    <?php elseif ($dataSourceLabel === 'demo'): ?>
+                        <span class="cache-tag">Origem: base demo</span>
                     <?php endif; ?>
                 </div>
 
                 <form method="GET" action="" class="control-form">
                     <input type="hidden" name="username" value="<?php echo TextHelper::escape($username); ?>">
+                    <?php if ($isDemoMode): ?>
+                        <input type="hidden" name="demo" value="1">
+                    <?php endif; ?>
                     <label for="order_by">Ordenar</label>
                     <select id="order_by" name="order_by" class="sort-select" onchange="this.form.submit()">
                         <option value="tempo_jogado"<?php echo $orderBy === 'tempo_jogado' ? ' selected' : ''; ?>>Tempo jogado</option>
@@ -199,7 +221,7 @@ use Anderson\SteamGames\Support\TextHelper;
                     <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                         <a
                             class="page-link<?php echo $i === $currentPage ? ' active' : ''; ?>"
-                            href="?username=<?php echo urlencode($username); ?>&order_by=<?php echo urlencode($orderBy); ?>&played_filter=<?php echo urlencode($playedFilter); ?>&price_filter=<?php echo urlencode($priceFilter); ?>&achievement_filter=<?php echo urlencode($achievementFilter); ?>&page=<?php echo $i; ?>"
+                            href="?username=<?php echo urlencode($username); ?>&order_by=<?php echo urlencode($orderBy); ?>&played_filter=<?php echo urlencode($playedFilter); ?>&price_filter=<?php echo urlencode($priceFilter); ?>&achievement_filter=<?php echo urlencode($achievementFilter); ?>&page=<?php echo $i; ?><?php echo $isDemoMode ? '&demo=1' : ''; ?>"
                         >
                             <?php echo $i; ?>
                         </a>
