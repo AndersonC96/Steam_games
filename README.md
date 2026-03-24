@@ -30,6 +30,8 @@ Você informa um usuário da Steam e o sistema retorna:
 - filtros por status de jogo (jogados/não jogados), preço e conquistas;
 - indicador de origem dos dados (cache local ou Steam API em tempo real);
 - faixa de KPIs com tempo de resposta, origem da consulta e volume de jogos;
+- métricas acumuladas por sessão (média de latência e taxa de cache hit);
+- botão para copiar URL com filtros e compartilhar exatamente a mesma visão;
 - alternância de tema claro/escuro com persistência local;
 - estado vazio amigável quando filtros não retornam jogos.
 

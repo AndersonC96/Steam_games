@@ -1,6 +1,10 @@
 <?php
 declare(strict_types=1);
 
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
 require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . '/steam_api.php';
 
@@ -56,6 +60,15 @@ $defaultUsername = '';
 $detalhesJogos = null;
 $queryTimeMs = 0.0;
 
+if (!isset($_SESSION['portfolio_metrics']) || !is_array($_SESSION['portfolio_metrics'])) {
+    $_SESSION['portfolio_metrics'] = [
+        'queries' => 0,
+        'total_ms' => 0.0,
+        'cache_hits' => 0,
+        'last_username' => '',
+    ];
+}
+
 try {
     $dotenv = Dotenv::createImmutable(__DIR__);
     $dotenv->safeLoad();
@@ -80,6 +93,13 @@ if (isset($_GET['username'])) {
         if (is_string($detalhesJogos)) {
             $errorMessage = $detalhesJogos;
             $detalhesJogos = null;
+        } else {
+            $_SESSION['portfolio_metrics']['queries']++;
+            $_SESSION['portfolio_metrics']['total_ms'] += $queryTimeMs;
+            $_SESSION['portfolio_metrics']['last_username'] = $username;
+            if (($detalhesJogos['meta']['source'] ?? '') === 'cache') {
+                $_SESSION['portfolio_metrics']['cache_hits']++;
+            }
         }
     }
 }
@@ -93,6 +113,11 @@ $totalGamesBeforeFilter = 0;
 $totalMinutes = 0;
 $totalValue = 0.0;
 $dataSourceLabel = '';
+$sessionQueries = (int) ($_SESSION['portfolio_metrics']['queries'] ?? 0);
+$sessionAvgMs = $sessionQueries > 0 ? ((float) ($_SESSION['portfolio_metrics']['total_ms'] ?? 0.0) / $sessionQueries) : 0.0;
+$sessionCacheRate = $sessionQueries > 0 ? (((int) ($_SESSION['portfolio_metrics']['cache_hits'] ?? 0) / $sessionQueries) * 100) : 0.0;
+$lastUser = (string) ($_SESSION['portfolio_metrics']['last_username'] ?? '');
+$shareUrl = '';
 
 if (is_array($detalhesJogos)) {
     $games = $detalhesJogos['games'];
@@ -156,6 +181,17 @@ if (is_array($detalhesJogos)) {
     $currentPage = min($currentPage, $totalPages);
     $startIndex = ($currentPage - 1) * $itemsPerPage;
     $games = array_slice($games, $startIndex, $itemsPerPage);
+
+    $sharePath = strtok((string) ($_SERVER['REQUEST_URI'] ?? ''), '?');
+    $shareParams = [
+        'username' => $username,
+        'order_by' => $orderBy,
+        'played_filter' => $playedFilter,
+        'price_filter' => $priceFilter,
+        'achievement_filter' => $achievementFilter,
+        'page' => $currentPage,
+    ];
+    $shareUrl = $sharePath . '?' . http_build_query($shareParams);
 }
 ?>
 <!DOCTYPE html>
@@ -325,7 +361,7 @@ if (is_array($detalhesJogos)) {
         .kpi-strip {
             margin: 0 0 16px;
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 10px;
         }
 
@@ -360,6 +396,13 @@ if (is_array($detalhesJogos)) {
             font-size: 1rem;
             max-width: 760px;
             margin: 12px 0 0;
+        }
+
+        .hero-note {
+            margin: 10px 0 0;
+            color: #385b86;
+            font-size: 0.9rem;
+            font-weight: 500;
         }
 
         .alert {
@@ -467,6 +510,11 @@ if (is_array($detalhesJogos)) {
             align-items: center;
             gap: 8px;
             flex-wrap: wrap;
+        }
+
+        .button-inline {
+            padding: 10px 12px;
+            font-size: 0.82rem;
         }
 
         .cache-tag {
@@ -681,6 +729,7 @@ if (is_array($detalhesJogos)) {
         <section class="hero">
             <h2>Dashboard de biblioteca Steam com foco em experiência de uso e performance.</h2>
             <p>Busca de perfil, enriquecimento de catálogo, filtros combinados e cache local para reduzir latência em consultas recorrentes.</p>
+            <p class="hero-note">Portfolio pitch: production-grade API integration, resilient data flow, and UX-first information design.</p>
         </section>
 
         <?php if ($errorMessage !== ''): ?>
@@ -700,6 +749,14 @@ if (is_array($detalhesJogos)) {
                 <article class="kpi">
                     <small>volume total do perfil</small>
                     <strong><?php echo e($totalGamesBeforeFilter); ?> jogos</strong>
+                </article>
+                <article class="kpi">
+                    <small>média da sessão</small>
+                    <strong><?php echo e(number_format($sessionAvgMs, 0, ',', '.')); ?> ms</strong>
+                </article>
+                <article class="kpi">
+                    <small>cache hit (sessão)</small>
+                    <strong><?php echo e(number_format($sessionCacheRate, 0, ',', '.')); ?>%</strong>
                 </article>
             </section>
 
@@ -774,6 +831,10 @@ if (is_array($detalhesJogos)) {
                         <option value="com"<?php echo $achievementFilter === 'com' ? ' selected' : ''; ?>>Com</option>
                         <option value="sem"<?php echo $achievementFilter === 'sem' ? ' selected' : ''; ?>>Sem</option>
                     </select>
+
+                    <?php if ($shareUrl !== ''): ?>
+                        <button id="copy-link" class="button-secondary button-inline" data-share-url="<?php echo e($shareUrl); ?>" type="button">Copiar URL dos filtros</button>
+                    <?php endif; ?>
                 </form>
             </section>
 
@@ -817,7 +878,10 @@ if (is_array($detalhesJogos)) {
 
         <footer class="footer">
             <span>Stack: PHP, GuzzleHTTP, Dotenv, Steam Web API, cache em arquivo</span>
-            <span>GitHub: <a href="https://github.com/AndersonC96" target="_blank" rel="noreferrer">github.com/AndersonC96</a></span>
+            <span>
+                GitHub: <a href="https://github.com/AndersonC96" target="_blank" rel="noreferrer">github.com/AndersonC96</a>
+                <?php if ($lastUser !== ''): ?> | último perfil: <?php echo e($lastUser); ?><?php endif; ?>
+            </span>
         </footer>
     </main>
 
@@ -846,6 +910,25 @@ if (is_array($detalhesJogos)) {
                     localStorage.setItem(key, 'dark');
                 }
             });
+
+            var copyButton = document.getElementById('copy-link');
+            if (copyButton) {
+                copyButton.addEventListener('click', function () {
+                    var relativeUrl = copyButton.getAttribute('data-share-url') || '';
+                    var fullUrl = window.location.origin + relativeUrl;
+
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(fullUrl).then(function () {
+                            copyButton.textContent = 'URL copiada';
+                            setTimeout(function () {
+                                copyButton.textContent = 'Copiar URL dos filtros';
+                            }, 1400);
+                        });
+                    } else {
+                        window.prompt('Copie o link:', fullUrl);
+                    }
+                });
+            }
         })();
     </script>
 </body>
