@@ -29,6 +29,8 @@ Você informa um usuário da Steam e o sistema retorna:
 - modo demo para validação rápida da interface;
 - filtros por status de jogo (jogados/não jogados), preço e conquistas;
 - indicador de origem dos dados (cache local ou Steam API em tempo real);
+- faixa de KPIs com tempo de resposta, origem da consulta e volume de jogos;
+- alternância de tema claro/escuro com persistência local;
 - estado vazio amigável quando filtros não retornam jogos.
 
 ## Stack

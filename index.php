@@ -54,6 +54,7 @@ $errorMessage = '';
 $apiKey = '';
 $defaultUsername = '';
 $detalhesJogos = null;
+$queryTimeMs = 0.0;
 
 try {
     $dotenv = Dotenv::createImmutable(__DIR__);
@@ -73,7 +74,9 @@ if (isset($_GET['username'])) {
     } elseif ($apiKey === '') {
         $errorMessage = 'A chave STEAM_API_KEY não foi encontrada no arquivo .env.';
     } else {
+        $queryStart = microtime(true);
         $detalhesJogos = getUserGameDetails($username, $apiKey);
+        $queryTimeMs = (microtime(true) - $queryStart) * 1000;
         if (is_string($detalhesJogos)) {
             $errorMessage = $detalhesJogos;
             $detalhesJogos = null;
@@ -177,6 +180,18 @@ if (is_array($detalhesJogos)) {
             --danger: #d23f3f;
         }
 
+        html[data-theme='dark'] {
+            --bg: #111827;
+            --bg-soft: #1b2637;
+            --panel: #1b2637;
+            --line: #33465f;
+            --text: #e8edf4;
+            --muted: #a6b6c8;
+            --accent: #6aa6ff;
+            --accent-soft: #8cbbff;
+            --danger: #ff8080;
+        }
+
         * {
             box-sizing: border-box;
         }
@@ -185,7 +200,9 @@ if (is_array($detalhesJogos)) {
             margin: 0;
             color: var(--text);
             font-family: 'IBM Plex Sans', sans-serif;
-            background: var(--bg);
+            background:
+                radial-gradient(circle at 10% 10%, rgba(74, 147, 255, 0.08), transparent 40%),
+                var(--bg);
             min-height: 100vh;
         }
 
@@ -303,6 +320,32 @@ if (is_array($detalhesJogos)) {
             background: #fff;
             padding: 28px;
             box-shadow: 0 6px 16px rgba(26, 42, 61, 0.06);
+        }
+
+        .kpi-strip {
+            margin: 0 0 16px;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .kpi {
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: var(--bg-soft);
+            padding: 12px;
+        }
+
+        .kpi small {
+            color: var(--muted);
+            display: block;
+            font-size: 0.76rem;
+            margin-bottom: 6px;
+        }
+
+        .kpi strong {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 1.02rem;
         }
 
         .hero h2 {
@@ -435,6 +478,30 @@ if (is_array($detalhesJogos)) {
             background: #eef5ff;
         }
 
+        .footer {
+            margin-top: 28px;
+            border: 1px solid var(--line);
+            background: var(--bg-soft);
+            border-radius: 10px;
+            padding: 14px 16px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 8px;
+            color: var(--muted);
+            font-size: 0.86rem;
+        }
+
+        .footer a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
         .games-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -545,6 +612,10 @@ if (is_array($detalhesJogos)) {
                 grid-template-columns: 1fr 1fr;
             }
 
+            .kpi-strip {
+                grid-template-columns: 1fr;
+            }
+
             .stats {
                 grid-template-columns: 1fr;
             }
@@ -601,7 +672,10 @@ if (is_array($detalhesJogos)) {
                 >
                 <button type="submit" class="button">Buscar</button>
             </form>
-            <a class="button-secondary" href="?username=gaben&order_by=tempo_jogado">Demo rápida</a>
+            <div class="control-stack">
+                <a class="button-secondary" href="?username=gaben&order_by=tempo_jogado">Demo rápida</a>
+                <button id="theme-toggle" class="button-secondary" type="button">Alternar tema</button>
+            </div>
         </header>
 
         <section class="hero">
@@ -614,6 +688,21 @@ if (is_array($detalhesJogos)) {
         <?php endif; ?>
 
         <?php if (!empty($profile)): ?>
+            <section class="kpi-strip">
+                <article class="kpi">
+                    <small>tempo de resposta</small>
+                    <strong><?php echo e(number_format($queryTimeMs, 0, ',', '.')); ?> ms</strong>
+                </article>
+                <article class="kpi">
+                    <small>fonte da consulta</small>
+                    <strong><?php echo e($dataSourceLabel === 'cache' ? 'cache local' : 'steam api'); ?></strong>
+                </article>
+                <article class="kpi">
+                    <small>volume total do perfil</small>
+                    <strong><?php echo e($totalGamesBeforeFilter); ?> jogos</strong>
+                </article>
+            </section>
+
             <section class="profile">
                 <div class="profile-card">
                     <div class="profile-main">
@@ -725,6 +814,39 @@ if (is_array($detalhesJogos)) {
                 </nav>
             <?php endif; ?>
         <?php endif; ?>
+
+        <footer class="footer">
+            <span>Stack: PHP, GuzzleHTTP, Dotenv, Steam Web API, cache em arquivo</span>
+            <span>GitHub: <a href="https://github.com/AndersonC96" target="_blank" rel="noreferrer">github.com/AndersonC96</a></span>
+        </footer>
     </main>
+
+    <script>
+        (function () {
+            var doc = document.documentElement;
+            var key = 'steam-dashboard-theme';
+            var saved = localStorage.getItem(key);
+
+            if (saved === 'dark') {
+                doc.setAttribute('data-theme', 'dark');
+            }
+
+            var toggle = document.getElementById('theme-toggle');
+            if (!toggle) {
+                return;
+            }
+
+            toggle.addEventListener('click', function () {
+                var isDark = doc.getAttribute('data-theme') === 'dark';
+                if (isDark) {
+                    doc.removeAttribute('data-theme');
+                    localStorage.setItem(key, 'light');
+                } else {
+                    doc.setAttribute('data-theme', 'dark');
+                    localStorage.setItem(key, 'dark');
+                }
+            });
+        })();
+    </script>
 </body>
 </html>
