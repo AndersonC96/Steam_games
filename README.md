@@ -51,17 +51,18 @@ O projeto é estruturado em torno de princípios de separação de responsabilid
    ```
 
 3. **Configure as variáveis de ambiente:**
-   Crie um arquivo `.env` na raiz do projeto com o seguinte conteúdo:
-   ```dotenv
-   STEAM_API_KEY=sua_chave_da_steam_api
-   STEAM_USERNAME=usuario_padrao_opcional
+   Copie o arquivo de template e preencha com suas chaves:
+   ```bash
+   cp .env.example .env
    ```
+   Edite o arquivo `.env` e insira sua `STEAM_API_KEY`. Você pode obter uma chave em [steamcommunity.com/dev/apikey](https://steamcommunity.com/dev/apikey).
 
 4. **Inicie o servidor embutido do PHP:**
    ```bash
    php -S localhost:8000
    ```
    Acesse a aplicação em `http://localhost:8000`.
+
 
 ## Executando os Testes
 
