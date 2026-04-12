@@ -12,13 +12,14 @@ use Anderson\SteamGames\Support\TextHelper;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Promise;
 
 final class SteamApiService implements SteamApiInterface
 {
     public function __construct(
         private readonly CacheService $cacheService,
         private readonly int $cacheTtlSeconds = 900,
-        private readonly int $maxGamesToProcess = 100
+        private readonly int $maxGamesToProcess = 50
     ) {
     }
 
@@ -37,28 +38,59 @@ final class SteamApiService implements SteamApiInterface
 
         $steamId = $this->getSteamUserId($username, $apiKey);
         if (!$steamId) {
-            throw new Exception('Usuário não encontrado.');
+            throw new Exception('Usuário não encontrado na Steam.');
         }
 
         $profile = $this->getUserProfile($steamId, $apiKey);
         if (!$profile) {
-            throw new Exception('Perfil do usuário não encontrado.');
+            throw new Exception('Perfil não acessível (verifique a privacidade).');
         }
 
         $allGames = $this->getSteamUserGames($steamId, $apiKey);
         if (empty($allGames)) {
-            throw new Exception('Nenhum jogo encontrado para este usuário.');
+            throw new Exception('Biblioteca vazia ou privada.');
         }
 
-        // Sort by playtime to process the most relevant games first
+        // Ordenar por tempo jogado para priorizar jogos relevantes na carga inicial
         usort($allGames, fn ($a, $b) => ($b['playtime_forever'] ?? 0) <=> ($a['playtime_forever'] ?? 0));
 
         $gamesToProcess = array_slice($allGames, 0, $this->maxGamesToProcess);
-        $processedGames = [];
+        
+        // Fase 1: Identificar o que precisa ser buscado (Promises)
+        $promises = [];
+        $client = $this->client();
 
         foreach ($gamesToProcess as $game) {
             $appId = (int) $game['appid'];
-            $details = $this->getGameDetailsCached($steamId, $appId, $apiKey);
+            $userAppKey = $steamId . '_' . $appId;
+            $cached = $this->cacheService->read('user_game_details', $userAppKey, $this->cacheTtlSeconds);
+
+            if ($cached) {
+                $promises[$appId] = Promise\Create::promiseFor($cached);
+            } else {
+                // Requisição assíncrona para a Store API
+                $promises[$appId] = $client->requestAsync('GET', 'https://store.steampowered.com/api/appdetails', [
+                    'query' => ['appids' => $appId, 'l' => 'brazilian']
+                ])->then(function ($response) use ($appId, $steamId, $apiKey) {
+                    $data = json_decode((string) $response->getBody(), true);
+                    $details = $this->processGameResponse($data, $appId, $steamId, $apiKey);
+                    
+                    // Salva cache individual do jogo
+                    $this->cacheService->write('user_game_details', $steamId . '_' . $appId, $details);
+                    return $details;
+                }, function () {
+                    return $this->fallbackDetails();
+                });
+            }
+        }
+
+        // Fase 2: Aguardar todas as requisições (Processamento Paralelo)
+        $responses = Promise\Utils::unwrap($promises);
+        
+        $processedGames = [];
+        foreach ($gamesToProcess as $game) {
+            $appId = (int) $game['appid'];
+            $details = $responses[$appId] ?? $this->fallbackDetails();
             $playtimeMinutes = (int) ($game['playtime_forever'] ?? 0);
 
             $processedGames[] = new SteamGame(
@@ -81,7 +113,6 @@ final class SteamApiService implements SteamApiInterface
             ['source' => 'live', 'cache_ttl' => $this->cacheTtlSeconds]
         );
 
-        // Save to cache (convert DTOs to arrays for storage)
         $this->cacheService->write('user_games', $cacheKey, [
             'profile' => (array) $result->profile,
             'games' => array_map(fn (SteamGame $g) => (array) $g, $result->games),
@@ -90,43 +121,29 @@ final class SteamApiService implements SteamApiInterface
         return $result;
     }
 
-    private function getGameDetailsCached(string $steamId, int $appId, string $apiKey): array
+    private function processGameResponse(?array $data, int $appId, string $steamId, string $apiKey): array
     {
-        $cacheKey = (string) $appId;
-        // Game details change less frequently, so we could use a longer TTL here if we wanted.
-        // For now, let's stick to the same TTL or maybe longer?
-        // Actually, game details like price change, but let's cache them for 24h to be safe and fast.
-        $cached = $this->cacheService->read('game_details', $cacheKey, 86400);
-
-        if ($cached) {
-            // Check if achievements are also cached (they depend on steamId)
-            // Wait, achievements depend on the user, so they should be cached per user or inside the user_games cache.
-            // But game details (price, description) are global.
-            // Let's keep it simple: cache global details and fetch achievements.
+        if (!isset($data[$appId]['data'])) {
+            return $this->fallbackDetails();
         }
 
-        // To keep it simple and consistent with current project:
-        // Let's just use the current logic but wrap it in a per-game cache.
-        // I will include achievements in the per-game-per-user cache key for now.
-        $userAppKey = $steamId . '_' . $appId;
-        $cachedUserApp = $this->cacheService->read('user_game_details', $userAppKey, $this->cacheTtlSeconds);
+        $gameData = $data[$appId]['data'];
 
-        if ($cachedUserApp) {
-            return $cachedUserApp;
-        }
-
-        $details = $this->getGameDetails($steamId, $appId, $apiKey);
-        $this->cacheService->write('user_game_details', $userAppKey, $details);
-
-        return $details;
+        return [
+            'price' => $gameData['price_overview']['final_formatted'] ?? 'Grátis',
+            'description' => $gameData['short_description'] ?? 'Descrição não disponível',
+            'image' => $gameData['header_image'] ?? 'img/padrao.png',
+            'achievements' => $this->getAchievements($steamId, $appId, $apiKey),
+            'release_date' => $gameData['release_date']['date'] ?? 'N/A',
+        ];
     }
 
     private function client(): Client
     {
         return new Client([
-            'timeout' => 10,
+            'timeout' => 15,
             'connect_timeout' => 5,
-            'http_errors' => false, // Handle errors manually
+            'http_errors' => false,
         ]);
     }
 
@@ -134,9 +151,6 @@ final class SteamApiService implements SteamApiInterface
     {
         try {
             $response = $this->client()->request('GET', $url, ['query' => $query]);
-            if ($response->getStatusCode() !== 200) {
-                return [];
-            }
             return json_decode((string) $response->getBody(), true) ?? [];
         } catch (GuzzleException) {
             return [];
@@ -145,21 +159,18 @@ final class SteamApiService implements SteamApiInterface
 
     private function getSteamUserId(string $username, string $apiKey): ?string
     {
+        if (is_numeric($username) && strlen($username) === 17) {
+            return $username;
+        }
+
         $data = $this->getJson('https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/', [
             'key' => $apiKey,
             'vanityurl' => $username,
         ]);
 
-        if (isset($data['response']['success']) && (int) $data['response']['success'] === 1) {
-            return $data['response']['steamid'] ?? null;
-        }
-
-        // If it's already a SteamID
-        if (is_numeric($username) && strlen($username) === 17) {
-            return $username;
-        }
-
-        return null;
+        return (isset($data['response']['success']) && (int) $data['response']['success'] === 1) 
+            ? $data['response']['steamid'] 
+            : null;
     }
 
     private function getUserProfile(string $steamId, string $apiKey): ?array
@@ -174,11 +185,10 @@ final class SteamApiService implements SteamApiInterface
         }
 
         $player = $data['response']['players'][0];
-
         return [
-            'username' => $player['personaname'] ?? 'Nome não disponível',
+            'username' => $player['personaname'] ?? 'N/A',
             'avatar' => $player['avatarfull'] ?? 'img/padrao.png',
-            'account_created' => isset($player['timecreated']) ? date('d/m/Y', $player['timecreated']) : 'Data de criação não disponível',
+            'account_created' => isset($player['timecreated']) ? date('d/m/Y', $player['timecreated']) : 'N/A',
             'country' => $player['loccountrycode'] ?? 'N/A',
         ];
     }
@@ -189,7 +199,6 @@ final class SteamApiService implements SteamApiInterface
             'key' => $apiKey,
             'steamid' => $steamId,
             'include_appinfo' => true,
-            'include_played_free_games' => false,
         ]);
 
         return $data['response']['games'] ?? [];
@@ -204,46 +213,11 @@ final class SteamApiService implements SteamApiInterface
         ]);
 
         if (isset($data['playerstats']['achievements'])) {
-            $unlocked = count(array_filter($data['playerstats']['achievements'], static fn (array $a): bool => isset($a['achieved']) && (int) $a['achieved'] === 1));
-
-            // Need total achievements from schema
-            $schema = $this->getJson('https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/', [
-                'key' => $apiKey,
-                'appid' => $appId,
-            ]);
-
-            $total = isset($schema['game']['availableGameStats']['achievements'])
-                ? count($schema['game']['availableGameStats']['achievements'])
-                : 0;
-
-            if ($total > 0) {
-                return $unlocked . '/' . $total . ' Conquistas';
-            }
+            $unlocked = count(array_filter($data['playerstats']['achievements'], fn ($a) => (int)($a['achieved'] ?? 0) === 1));
+            return $unlocked . ' Conquistas';
         }
 
         return 'Jogo sem conquistas';
-    }
-
-    private function getGameDetails(string $steamId, int $appId, string $apiKey): array
-    {
-        $data = $this->getJson('https://store.steampowered.com/api/appdetails', [
-            'appids' => $appId,
-            'l' => 'brazilian', // Get prices and descriptions in PT-BR
-        ]);
-
-        if (!isset($data[$appId]['data'])) {
-            return $this->fallbackDetails();
-        }
-
-        $gameData = $data[$appId]['data'];
-
-        return [
-            'price' => $gameData['price_overview']['final_formatted'] ?? 'Grátis',
-            'description' => $gameData['short_description'] ?? ($gameData['detailed_description'] ?? 'Descrição não disponível'),
-            'image' => $gameData['header_image'] ?? 'img/padrao.png',
-            'achievements' => $this->getAchievements($steamId, $appId, $apiKey),
-            'release_date' => $gameData['release_date']['date'] ?? 'N/A',
-        ];
     }
 
     private function fallbackDetails(): array
@@ -259,21 +233,8 @@ final class SteamApiService implements SteamApiInterface
 
     private function formatPlaytime(int $minutes): string
     {
-        if ($minutes <= 0) {
-            return 'Não jogado';
-        }
-
-        if ($minutes < 60) {
-            return $minutes . ' min';
-        }
-
-        $hours = floor($minutes / 60);
-        $rem = $minutes % 60;
-
-        if ($rem === 0) {
-            return $hours . 'h';
-        }
-
-        return $hours . 'h ' . $rem . 'min';
+        if ($minutes <= 0) return 'Não jogado';
+        if ($minutes < 60) return $minutes . ' min';
+        return floor($minutes / 60) . 'h ' . ($minutes % 60) . 'min';
     }
 }
