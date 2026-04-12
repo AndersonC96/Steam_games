@@ -231,11 +231,57 @@
 
         .alert {
             margin-top: 14px;
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .alert-info {
+            border: 1px solid #d1ecf1;
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .alert-error {
             border: 1px solid #f2cccc;
             background: #fff3f3;
             color: #8a2e2e;
-            border-radius: 12px;
-            padding: 14px 16px;
+        }
+
+        .source-tag {
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .source-cache { background: #e3f2fd; color: #1976d2; border: 1px solid #bbdefb; }
+        .source-demo { background: #f3e5f5; color: #7b1fa2; border: 1px solid #e1bee7; }
+        .source-live { background: #e8f5e9; color: #388e3c; border: 1px solid #c8e6c9; }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .filter-group label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .filter-group select {
+            border: 1px solid var(--line);
+            background: #fff;
+            color: var(--text);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font: inherit;
+            outline: none;
+            cursor: pointer;
         }
 
         .profile {

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Anderson\SteamGames\Controllers;
 
+use Anderson\SteamGames\Models\GameCollection;
 use Anderson\SteamGames\Services\Contracts\SteamApiInterface;
 use Anderson\SteamGames\Services\GameCatalogService;
+use Exception;
 
 final class DashboardController
 {
@@ -19,62 +21,49 @@ final class DashboardController
 
     public function handle(array $query, array &$session, array $server): array
     {
-        $allowedOrders = ['nome', 'data_lancamento', 'tempo_jogado', 'preco_atual'];
-        $allowedPlayed = ['todos', 'jogados', 'nao_jogados'];
-        $allowedPrice = ['todos', 'gratis', 'pagos'];
-        $allowedAchievements = ['todos', 'com', 'sem'];
-
-        $requestedOrderBy = (string) ($query['order_by'] ?? 'tempo_jogado');
-        $requestedPlayedFilter = (string) ($query['played_filter'] ?? 'todos');
-        $requestedPriceFilter = (string) ($query['price_filter'] ?? 'todos');
-        $requestedAchievementFilter = (string) ($query['achievement_filter'] ?? 'todos');
+        // 1. Inputs & Defaults
         $isDemoMode = isset($query['demo']) && (string) $query['demo'] === '1';
-
-        $orderBy = in_array($requestedOrderBy, $allowedOrders, true) ? $requestedOrderBy : 'tempo_jogado';
-        $playedFilter = in_array($requestedPlayedFilter, $allowedPlayed, true) ? $requestedPlayedFilter : 'todos';
-        $priceFilter = in_array($requestedPriceFilter, $allowedPrice, true) ? $requestedPriceFilter : 'todos';
-        $achievementFilter = in_array($requestedAchievementFilter, $allowedAchievements, true) ? $requestedAchievementFilter : 'todos';
-        $currentPage = max(1, (int) ($query['page'] ?? 1));
-
-        $errorMessage = '';
         $username = trim((string) ($query['username'] ?? ''));
         $apiKey = $_ENV['STEAM_API_KEY'] ?? '';
         $defaultUsername = $_ENV['STEAM_USERNAME'] ?? '';
         $inputValue = $username !== '' ? $username : $defaultUsername;
 
-        $detalhesJogos = null;
-        $queryTimeMs = 0.0;
+        // 2. Filters & Pagination
+        $orderBy = $this->validateParam($query['order_by'] ?? 'tempo_jogado', ['nome', 'data_lancamento', 'tempo_jogado', 'preco_atual'], 'tempo_jogado');
+        $playedFilter = $this->validateParam($query['played_filter'] ?? 'todos', ['todos', 'jogados', 'nao_jogados'], 'todos');
+        $priceFilter = $this->validateParam($query['price_filter'] ?? 'todos', ['todos', 'gratis', 'pagos'], 'todos');
+        $achievementFilter = $this->validateParam($query['achievement_filter'] ?? 'todos', ['todos', 'com', 'sem'], 'todos');
+        $currentPage = max(1, (int) ($query['page'] ?? 1));
 
+        // 3. Execution
+        $errorMessage = '';
+        $collection = null;
+        $queryTimeMs = 0.0;
         $this->initializeSessionMetrics($session);
 
         if (isset($query['username'])) {
-            if ($username === '') {
-                $errorMessage = 'Digite um nome de usuário Steam para buscar.';
-            } elseif ($apiKey === '' && !$isDemoMode) {
-                $errorMessage = 'A chave STEAM_API_KEY não foi encontrada no arquivo .env.';
-            } else {
+            try {
+                if ($username === '') {
+                    throw new Exception('Digite um nome de usuário Steam para buscar.');
+                }
+                if ($apiKey === '' && !$isDemoMode) {
+                    throw new Exception('A chave STEAM_API_KEY não foi encontrada no arquivo .env.');
+                }
+
                 $queryStart = microtime(true);
-                $detalhesJogos = $this->steamApiService->getUserGameDetails($username, $apiKey);
+                $collection = $this->steamApiService->getUserGameDetails($username, $apiKey);
                 $queryTimeMs = (microtime(true) - $queryStart) * 1000;
 
-                if (is_string($detalhesJogos)) {
-                    $errorMessage = $detalhesJogos;
-                    $detalhesJogos = null;
-                } else {
-                    $session['portfolio_metrics']['queries']++;
-                    $session['portfolio_metrics']['total_ms'] += $queryTimeMs;
-                    $session['portfolio_metrics']['last_username'] = $username;
+                $this->updateSessionMetrics($session, $queryTimeMs, $username, $collection->meta['source'] ?? '');
 
-                    if (($detalhesJogos['meta']['source'] ?? '') === 'cache') {
-                        $session['portfolio_metrics']['cache_hits']++;
-                    }
-                }
+            } catch (Exception $e) {
+                $errorMessage = $e->getMessage();
             }
         }
 
+        // 4. Post-processing (Filtering, Totals, Pagination)
         $games = [];
-        $profile = [];
-        $itemsPerPage = (int) ($this->config['items_per_page'] ?? 9);
+        $profile = null;
         $totalPages = 1;
         $totalGames = 0;
         $totalGamesBeforeFilter = 0;
@@ -83,77 +72,65 @@ final class DashboardController
         $dataSourceLabel = '';
         $shareUrl = '';
 
-        if (is_array($detalhesJogos)) {
-            $games = $detalhesJogos['games'];
-            $profile = $detalhesJogos['profile'];
-            $dataSourceLabel = $detalhesJogos['meta']['source'] ?? '';
-            $totalGamesBeforeFilter = count($games);
+        if ($collection instanceof GameCollection) {
+            $profile = $collection->profile;
+            $allGames = $collection->games;
+            $dataSourceLabel = $collection->meta['source'] ?? '';
+            $totalGamesBeforeFilter = count($allGames);
 
-            $games = $this->gameCatalogService->applyFilters($games, $playedFilter, $priceFilter, $achievementFilter);
-            $games = $this->gameCatalogService->sortGames($games, $orderBy);
+            $filteredGames = $this->gameCatalogService->applyFilters($allGames, $playedFilter, $priceFilter, $achievementFilter);
+            $sortedGames = $this->gameCatalogService->sortGames($filteredGames, $orderBy);
 
-            $totals = $this->gameCatalogService->totals($games);
+            $totals = $this->gameCatalogService->totals($sortedGames);
             $totalMinutes = (int) $totals['total_minutes'];
             $totalValue = (float) $totals['total_value'];
 
-            $totalGames = count($games);
+            $totalGames = count($sortedGames);
+            $itemsPerPage = (int) ($this->config['items_per_page'] ?? 9);
             $totalPages = max(1, (int) ceil($totalGames / $itemsPerPage));
             $currentPage = min($currentPage, $totalPages);
-            $startIndex = ($currentPage - 1) * $itemsPerPage;
-            $games = array_slice($games, $startIndex, $itemsPerPage);
 
-            $sharePath = strtok((string) ($server['REQUEST_URI'] ?? ''), '?');
-            $shareParams = [
+            $games = array_slice($sortedGames, ($currentPage - 1) * $itemsPerPage, $itemsPerPage);
+
+            $shareUrl = $this->generateShareUrl($server, [
                 'username' => $username,
                 'order_by' => $orderBy,
                 'played_filter' => $playedFilter,
                 'price_filter' => $priceFilter,
                 'achievement_filter' => $achievementFilter,
                 'page' => $currentPage,
-            ];
-
-            if ($isDemoMode) {
-                $shareParams['demo'] = '1';
-            }
-
-            $shareUrl = $sharePath . '?' . http_build_query($shareParams);
+                'demo' => $isDemoMode ? '1' : null,
+            ]);
         }
 
-        $sessionQueries = (int) ($session['portfolio_metrics']['queries'] ?? 0);
-        $sessionAvgMs = $sessionQueries > 0 ? ((float) ($session['portfolio_metrics']['total_ms'] ?? 0.0) / $sessionQueries) : 0.0;
-        $sessionCacheRate = $sessionQueries > 0 ? (((int) ($session['portfolio_metrics']['cache_hits'] ?? 0) / $sessionQueries) * 100) : 0.0;
-        $lastUser = (string) ($session['portfolio_metrics']['last_username'] ?? '');
+        // 5. Session Stats for UI
+        $sessionStats = $this->getSessionStats($session);
 
-        return compact(
-            'orderBy',
-            'playedFilter',
-            'priceFilter',
-            'achievementFilter',
-            'currentPage',
-            'errorMessage',
-            'username',
-            'inputValue',
-            'queryTimeMs',
-            'games',
-            'profile',
-            'totalPages',
-            'totalGames',
-            'totalGamesBeforeFilter',
-            'totalMinutes',
-            'totalValue',
-            'dataSourceLabel',
-            'sessionAvgMs',
-            'sessionCacheRate',
-            'lastUser',
-            'shareUrl',
-            'isDemoMode'
-        );
+        return array_merge(compact(
+            'orderBy', 'playedFilter', 'priceFilter', 'achievementFilter',
+            'currentPage', 'errorMessage', 'username', 'inputValue',
+            'queryTimeMs', 'games', 'profile', 'totalPages', 'totalGames',
+            'totalGamesBeforeFilter', 'totalMinutes', 'totalValue',
+            'dataSourceLabel', 'shareUrl', 'isDemoMode'
+        ), $sessionStats);
     }
 
     public function render(array $data): void
     {
         extract($data, EXTR_SKIP);
         require $this->rootPath . '/views/dashboard.php';
+    }
+
+    private function validateParam(mixed $value, array $allowed, string $default): string
+    {
+        return in_array((string) $value, $allowed, true) ? (string) $value : $default;
+    }
+
+    private function generateShareUrl(array $server, array $params): string
+    {
+        $path = strtok((string) ($server['REQUEST_URI'] ?? ''), '?');
+        $cleanParams = array_filter($params, fn($v) => $v !== null && $v !== '');
+        return $path . '?' . http_build_query($cleanParams);
     }
 
     private function initializeSessionMetrics(array &$session): void
@@ -166,5 +143,26 @@ final class DashboardController
                 'last_username' => '',
             ];
         }
+    }
+
+    private function updateSessionMetrics(array &$session, float $timeMs, string $username, string $source): void
+    {
+        $session['portfolio_metrics']['queries']++;
+        $session['portfolio_metrics']['total_ms'] += $timeMs;
+        $session['portfolio_metrics']['last_username'] = $username;
+        if ($source === 'cache') {
+            $session['portfolio_metrics']['cache_hits']++;
+        }
+    }
+
+    private function getSessionStats(array $session): array
+    {
+        $m = $session['portfolio_metrics'];
+        $queries = (int) $m['queries'];
+        return [
+            'sessionAvgMs' => $queries > 0 ? ($m['total_ms'] / $queries) : 0.0,
+            'sessionCacheRate' => $queries > 0 ? (($m['cache_hits'] / $queries) * 100) : 0.0,
+            'lastUser' => (string) $m['last_username'],
+        ];
     }
 }

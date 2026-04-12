@@ -21,7 +21,11 @@ $isDemoMode = isset($_GET['demo']) && $_GET['demo'] === '1';
 
 $steamApiService = $isDemoMode
     ? new DemoSteamApiService()
-    : new SteamApiService($cacheService, (int) $config['cache_ttl_seconds']);
+    : new SteamApiService(
+        $cacheService,
+        (int) $config['cache_ttl_seconds'],
+        (int) $config['max_games_to_process']
+    );
 
 $gameCatalogService = new GameCatalogService();
 $controller = new DashboardController($steamApiService, $gameCatalogService, $config, $rootPath);

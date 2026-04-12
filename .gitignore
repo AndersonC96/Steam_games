@@ -1,2 +1,5 @@
 /vendor/
 .env
+/cache/*.json
+.DS_Store
+*.log

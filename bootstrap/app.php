@@ -11,7 +11,10 @@ require $rootPath . '/vendor/autoload.php';
 $dotenv = Dotenv::createImmutable($rootPath);
 $dotenv->safeLoad();
 
+// Centralized config access
+$config = require $rootPath . '/config/app.php';
+
 return [
     'root_path' => $rootPath,
-    'config' => require $rootPath . '/config/app.php',
+    'config' => $config,
 ];

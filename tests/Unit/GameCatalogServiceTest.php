@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Anderson\SteamGames\Tests\Unit;
 
+use Anderson\SteamGames\Models\SteamGame;
 use Anderson\SteamGames\Services\GameCatalogService;
 use RuntimeException;
 
@@ -22,33 +23,33 @@ final class GameCatalogServiceTest
     {
         $service = new GameCatalogService();
         $games = [
-            ['nome' => 'A', 'tempo_jogado_minutos' => 120, 'preco_atual' => 'R$ 10,00', 'conquistas' => '1/10 Conquistas'],
-            ['nome' => 'B', 'tempo_jogado_minutos' => 0, 'preco_atual' => 'Preço não disponível', 'conquistas' => 'Jogo sem conquistas'],
+            $this->createGame('A', 120, 10.0, '1/10 Conquistas'),
+            $this->createGame('B', 0, 0.0, 'Jogo sem conquistas'),
         ];
 
         $filtered = $service->applyFilters($games, 'jogados', 'pagos', 'com');
         $this->assertSame(1, count($filtered), 'filters should keep only matching games');
-        $this->assertSame('A', $filtered[0]['nome'], 'filters should keep game A');
+        $this->assertSame('A', $filtered[0]->name, 'filters should keep game A');
     }
 
     private function testSortByPlaytime(): void
     {
         $service = new GameCatalogService();
         $games = [
-            ['nome' => 'A', 'tempo_jogado_minutos' => 10, 'preco_atual' => 'R$ 5,00', 'data_lancamento' => 'Jan 01, 2020'],
-            ['nome' => 'B', 'tempo_jogado_minutos' => 200, 'preco_atual' => 'R$ 5,00', 'data_lancamento' => 'Jan 01, 2020'],
+            $this->createGame('A', 10),
+            $this->createGame('B', 200),
         ];
 
         $sorted = $service->sortGames($games, 'tempo_jogado');
-        $this->assertSame('B', $sorted[0]['nome'], 'tempo_jogado sort should put highest playtime first');
+        $this->assertSame('B', $sorted[0]->name, 'tempo_jogado sort should put highest playtime first');
     }
 
     private function testTotals(): void
     {
         $service = new GameCatalogService();
         $games = [
-            ['tempo_jogado_minutos' => 60, 'preco_atual' => 'R$ 10,00'],
-            ['tempo_jogado_minutos' => 30, 'preco_atual' => 'R$ 20,00'],
+            $this->createGame('A', 60, 10.0),
+            $this->createGame('B', 30, 20.0),
         ];
 
         $totals = $service->totals($games);
@@ -60,7 +61,7 @@ final class GameCatalogServiceTest
     {
         $service = new GameCatalogService();
         $games = [
-            ['nome' => 'A', 'tempo_jogado_minutos' => 0, 'preco_atual' => 'Preço não disponível', 'conquistas' => 'Jogo sem conquistas'],
+            $this->createGame('A', 0, 0.0, 'Jogo sem conquistas'),
         ];
 
         $filtered = $service->applyFilters($games, 'jogados', 'pagos', 'com');
@@ -71,12 +72,28 @@ final class GameCatalogServiceTest
     {
         $service = new GameCatalogService();
         $games = [
-            ['nome' => 'A', 'tempo_jogado_minutos' => 10, 'preco_atual' => 'R$ 2,00', 'data_lancamento' => 'Jan 01, 2020'],
-            ['nome' => 'B', 'tempo_jogado_minutos' => 10, 'preco_atual' => 'R$ 40,00', 'data_lancamento' => 'Jan 01, 2020'],
+            $this->createGame('A', 10, 2.0),
+            $this->createGame('B', 10, 40.0),
         ];
 
         $sorted = $service->sortGames($games, 'preco_atual');
-        $this->assertSame('B', $sorted[0]['nome'], 'preco_atual sort should put highest price first');
+        $this->assertSame('B', $sorted[0]->name, 'preco_atual sort should put highest price first');
+    }
+
+    private function createGame(string $name, int $playtime, float $price = 0.0, string $ach = 'Jogo sem conquistas'): SteamGame
+    {
+        return new SteamGame(
+            123,
+            $name,
+            $playtime,
+            '',
+            '',
+            $price,
+            '',
+            '',
+            $ach,
+            ''
+        );
     }
 
     private function assertSame(mixed $expected, mixed $actual, string $message): void
