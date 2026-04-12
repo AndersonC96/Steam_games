@@ -4,13 +4,19 @@ declare(strict_types=1);
 
 namespace Anderson\SteamGames\Controllers;
 
+use Anderson\SteamGames\Exceptions\SteamApiException;
 use Anderson\SteamGames\Models\GameCollection;
 use Anderson\SteamGames\Services\Contracts\SteamApiInterface;
 use Anderson\SteamGames\Services\GameCatalogService;
-use Exception;
+use Anderson\SteamGames\Support\UrlHelper;
 
 final class DashboardController
 {
+    private const ALLOWED_ORDERS = ['nome', 'data_lancamento', 'tempo_jogado', 'preco_atual'];
+    private const ALLOWED_PLAYED = ['todos', 'jogados', 'nao_jogados'];
+    private const ALLOWED_PRICE = ['todos', 'gratis', 'pagos'];
+    private const ALLOWED_ACHIEVEMENTS = ['todos', 'com', 'sem'];
+
     public function __construct(
         private readonly SteamApiInterface $steamApiService,
         private readonly GameCatalogService $gameCatalogService,
@@ -21,104 +27,125 @@ final class DashboardController
 
     public function handle(array $query, array &$session, array $server): array
     {
-        // 1. Inputs & Defaults
-        $isDemoMode = isset($query['demo']) && (string) $query['demo'] === '1';
-        $username = trim((string) ($query['username'] ?? ''));
-        $apiKey = $_ENV['STEAM_API_KEY'] ?? '';
-        $defaultUsername = $_ENV['STEAM_USERNAME'] ?? '';
-        $inputValue = $username !== '' ? $username : $defaultUsername;
+        $input = $this->parseInput($query);
+        $this->initializeSessionMetrics($session);
 
-        // 2. Filters & Pagination
-        $orderBy = $this->validateParam($query['order_by'] ?? 'tempo_jogado', ['nome', 'data_lancamento', 'tempo_jogado', 'preco_atual'], 'tempo_jogado');
-        $playedFilter = $this->validateParam($query['played_filter'] ?? 'todos', ['todos', 'jogados', 'nao_jogados'], 'todos');
-        $priceFilter = $this->validateParam($query['price_filter'] ?? 'todos', ['todos', 'gratis', 'pagos'], 'todos');
-        $achievementFilter = $this->validateParam($query['achievement_filter'] ?? 'todos', ['todos', 'com', 'sem'], 'todos');
-        $currentPage = max(1, (int) ($query['page'] ?? 1));
-
-        // 3. Execution
         $errorMessage = '';
         $collection = null;
         $queryTimeMs = 0.0;
-        $this->initializeSessionMetrics($session);
 
-        if (isset($query['username'])) {
+        if ($input['isSearchRequested']) {
             try {
-                if ($username === '') {
-                    throw new Exception('Digite um nome de usuário Steam para buscar.');
-                }
-                if ($apiKey === '' && !$isDemoMode) {
-                    throw new Exception('A chave STEAM_API_KEY não foi encontrada no arquivo .env.');
-                }
+                $this->validateSearchPrerequisites($input['username'], $input['apiKey'], $input['isDemoMode']);
 
                 $queryStart = microtime(true);
-                $collection = $this->steamApiService->getUserGameDetails($username, $apiKey);
+                $collection = $this->steamApiService->getUserGameDetails($input['username'], $input['apiKey']);
                 $queryTimeMs = (microtime(true) - $queryStart) * 1000;
 
-                $this->updateSessionMetrics($session, $queryTimeMs, $username, $collection->meta['source'] ?? '');
-
-            } catch (\Exception $e) {
+                $this->updateSessionMetrics($session, $queryTimeMs, $input['username'], $collection->meta['source'] ?? '');
+            } catch (SteamApiException $e) {
                 $errorMessage = $e->getMessage();
+            } catch (\Throwable $e) {
+                // Catch any unexpected error to prevent crashing the view
+                $errorMessage = "Ocorreu um erro interno inesperado ao processar a busca.";
+                // In a real system, we would log $e->getMessage() here
             }
         }
 
-        // 4. Post-processing (Filtering, Totals, Pagination)
-        $games = [];
-        $profile = null;
-        $totalPages = 1;
-        $totalGames = 0;
-        $totalGamesBeforeFilter = 0;
-        $totalMinutes = 0;
-        $totalValue = 0.0;
-        $dataSourceLabel = '';
-        $shareUrl = '';
-
-        if ($collection instanceof GameCollection) {
-            $profile = $collection->profile;
-            $allGames = $collection->games;
-            $dataSourceLabel = $collection->meta['source'] ?? '';
-            $totalGamesBeforeFilter = count($allGames);
-
-            $filteredGames = $this->gameCatalogService->applyFilters($allGames, $playedFilter, $priceFilter, $achievementFilter);
-            $sortedGames = $this->gameCatalogService->sortGames($filteredGames, $orderBy);
-
-            $totals = $this->gameCatalogService->totals($sortedGames);
-            $totalMinutes = (int) $totals['total_minutes'];
-            $totalValue = (float) $totals['total_value'];
-
-            $totalGames = count($sortedGames);
-            $itemsPerPage = (int) ($this->config['items_per_page'] ?? 9);
-            $totalPages = max(1, (int) ceil($totalGames / $itemsPerPage));
-            $currentPage = min($currentPage, $totalPages);
-
-            $games = array_slice($sortedGames, ($currentPage - 1) * $itemsPerPage, $itemsPerPage);
-
-            $shareUrl = $this->generateShareUrl($server, [
-                'username' => $username,
-                'order_by' => $orderBy,
-                'played_filter' => $playedFilter,
-                'price_filter' => $priceFilter,
-                'achievement_filter' => $achievementFilter,
-                'page' => $currentPage,
-                'demo' => $isDemoMode ? '1' : null,
-            ]);
-        }
-
-        // 5. Session Stats for UI
-        $sessionStats = $this->getSessionStats($session);
-
-        return array_merge(compact(
-            'orderBy', 'playedFilter', 'priceFilter', 'achievementFilter',
-            'currentPage', 'errorMessage', 'username', 'inputValue',
-            'queryTimeMs', 'games', 'profile', 'totalPages', 'totalGames',
-            'totalGamesBeforeFilter', 'totalMinutes', 'totalValue',
-            'dataSourceLabel', 'shareUrl', 'isDemoMode'
-        ), $sessionStats);
+        return $this->buildViewModel($input, $collection, $session, $server, $errorMessage, $queryTimeMs);
     }
 
     public function render(array $data): void
     {
         extract($data, EXTR_SKIP);
         require $this->rootPath . '/views/dashboard.php';
+    }
+
+    private function parseInput(array $query): array
+    {
+        $username = trim((string) ($query['username'] ?? ''));
+        $defaultUsername = $_ENV['STEAM_USERNAME'] ?? '';
+
+        return [
+            'isSearchRequested' => isset($query['username']),
+            'isDemoMode' => isset($query['demo']) && (string) $query['demo'] === '1',
+            'username' => $username,
+            'inputValue' => $username !== '' ? $username : $defaultUsername,
+            'apiKey' => $_ENV['STEAM_API_KEY'] ?? '',
+            'orderBy' => $this->validateParam($query['order_by'] ?? 'tempo_jogado', self::ALLOWED_ORDERS, 'tempo_jogado'),
+            'playedFilter' => $this->validateParam($query['played_filter'] ?? 'todos', self::ALLOWED_PLAYED, 'todos'),
+            'priceFilter' => $this->validateParam($query['price_filter'] ?? 'todos', self::ALLOWED_PRICE, 'todos'),
+            'achievementFilter' => $this->validateParam($query['achievement_filter'] ?? 'todos', self::ALLOWED_ACHIEVEMENTS, 'todos'),
+            'currentPage' => max(1, (int) ($query['page'] ?? 1)),
+        ];
+    }
+
+    /**
+     * @throws SteamApiException
+     */
+    private function validateSearchPrerequisites(string $username, string $apiKey, bool $isDemoMode): void
+    {
+        if ($username === '') {
+            throw new SteamApiException('Digite um nome de usuário Steam para buscar.');
+        }
+
+        if ($apiKey === '' && !$isDemoMode) {
+            throw new SteamApiException('A API Key não está configurada no servidor.');
+        }
+    }
+
+    private function buildViewModel(array $input, ?GameCollection $collection, array $session, array $server, string $errorMessage, float $queryTimeMs): array
+    {
+        $viewModel = array_merge($input, [
+            'errorMessage' => $errorMessage,
+            'queryTimeMs' => $queryTimeMs,
+            'games' => [],
+            'profile' => null,
+            'totalPages' => 1,
+            'totalGames' => 0,
+            'totalGamesBeforeFilter' => 0,
+            'totalMinutes' => 0,
+            'totalValue' => 0.0,
+            'dataSourceLabel' => '',
+            'shareUrl' => '',
+        ]);
+
+        if ($collection instanceof GameCollection) {
+            $viewModel['profile'] = $collection->profile;
+            $viewModel['dataSourceLabel'] = $collection->meta['source'] ?? '';
+            $viewModel['totalGamesBeforeFilter'] = count($collection->games);
+
+            $filteredGames = $this->gameCatalogService->applyFilters(
+                $collection->games,
+                $input['playedFilter'],
+                $input['priceFilter'],
+                $input['achievementFilter']
+            );
+            $sortedGames = $this->gameCatalogService->sortGames($filteredGames, $input['orderBy']);
+            $totals = $this->gameCatalogService->totals($sortedGames);
+
+            $viewModel['totalMinutes'] = (int) $totals['total_minutes'];
+            $viewModel['totalValue'] = (float) $totals['total_value'];
+            $viewModel['totalGames'] = count($sortedGames);
+
+            $itemsPerPage = (int) ($this->config['items_per_page'] ?? 9);
+            $viewModel['totalPages'] = max(1, (int) ceil($viewModel['totalGames'] / $itemsPerPage));
+            $viewModel['currentPage'] = min($input['currentPage'], $viewModel['totalPages']);
+
+            $viewModel['games'] = array_slice($sortedGames, ($viewModel['currentPage'] - 1) * $itemsPerPage, $itemsPerPage);
+
+            $viewModel['shareUrl'] = $this->generateShareUrl($server, [
+                'username' => $input['username'],
+                'order_by' => $input['orderBy'],
+                'played_filter' => $input['playedFilter'],
+                'price_filter' => $input['priceFilter'],
+                'achievement_filter' => $input['achievementFilter'],
+                'page' => $viewModel['currentPage'],
+                'demo' => $input['isDemoMode'] ? '1' : null,
+            ]);
+        }
+
+        return array_merge($viewModel, $this->getSessionStats($session));
     }
 
     private function validateParam(mixed $value, array $allowed, string $default): string

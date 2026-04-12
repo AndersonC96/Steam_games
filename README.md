@@ -1,96 +1,99 @@
 # Steam Library Explorer
 
-Aplicação PHP para análise e visualização de bibliotecas Steam, com foco em integração de APIs, estratégias de cache e arquitetura limpa.
+Uma aplicação PHP enxuta para análise e visualização de bibliotecas da Steam. O objetivo deste projeto é demonstrar a construção de uma integração resiliente com APIs externas, manipulação de dados assíncrona e estratégias de cache, sem a dependência de frameworks pesados.
 
 ![Steam Logo](https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Steam_icon_logo.svg/1024px-Steam_icon_logo.svg.png)
 
-## 🎯 Visão Geral
+## Visão Geral
 
-Este projeto é um portfólio técnico que demonstra como construir uma integração resiliente com APIs externas (Steam Web e Steam Store). Ele resolve o perfil de um usuário, agrega seu catálogo de jogos, enriquece com dados reais da loja e oferece uma interface para filtragem e ordenação dinâmica.
+O projeto resolve o perfil de um usuário (via SteamID ou Vanity URL), agrega seu catálogo de jogos consumindo a Steam Web API e a Steam Store API, e apresenta uma interface para filtragem, ordenação e compartilhamento de estado.
 
-## 🚀 Funcionalidades
+Devido aos limites restritos de requisições da API pública da loja da Steam, o sistema implementa processamento concorrente (Promises) e cache em arquivo para garantir tempos de resposta viáveis na carga inicial e latência quase nula em consultas subsequentes.
 
-- **Resolução de Perfil:** Busca de avatares, país e data de criação via SteamID ou Vanity URL.
-- **Catálogo Enriquecido:** Agregação de preços reais, descrições, capas e conquistas.
-- **Performance de Elite:** Estratégia de cache em dois níveis (sessão e arquivo) para reduzir latência e evitar bloqueios por rate limiting.
-- **Filtros Combinados:** Filtragem por status de jogo (jogados/não jogados), faixa de preço e conquistas.
-- **Ordenação Dinâmica:** Ordenação por tempo de jogo, preço, data de lançamento ou nome.
-- **Modo Demonstração:** Possibilidade de validar toda a interface e fluxo sem necessidade de uma API Key real (`?demo=1`).
-- **URLs Compartilháveis:** Geração de links que preservam o estado exato dos filtros aplicados.
+## Funcionalidades Implementadas
 
-## 🏗️ Arquitetura e Design
+- **Integração de APIs:** Consulta simultânea à Steam Web API (perfil e biblioteca base) e Steam Store API (preços, descrições e conquistas).
+- **Processamento Concorrente:** Uso de Guzzle Promises para buscar detalhes de até 50 jogos simultaneamente, reduzindo o tempo de "cold start".
+- **Estratégia de Cache:** Cache local (file-based) por perfil e por jogo para mitigar *rate limiting* (HTTP 429) e acelerar requisições.
+- **Catálogo Filtrável:** Filtros in-memory por status de jogo (jogado/não jogado), faixa de preço e suporte a conquistas, com ordenação dinâmica.
+- **Compartilhamento de Estado:** Os filtros e a paginação refletem na URL, permitindo o compartilhamento do estado exato da visão.
+- **Modo Demo:** Um bypass de infraestrutura (`?demo=1`) que injeta um serviço com dados estáticos, útil para demonstrações onde a API Key não está disponível.
 
-O projeto segue princípios de **Clean Code** e **SOLID**, evitando acoplamento excessivo e garantindo testabilidade:
+## Arquitetura e Decisões Técnicas
 
-- **DTOs (Data Transfer Objects):** Uso de modelos imutáveis (`SteamGame`, `SteamProfile`) para transporte de dados entre camadas.
-- **Service Layer:** Separação clara entre integração de API (`SteamApiService`), lógica de negócio/catálogo (`GameCatalogService`) e persistência temporária (`CacheService`).
-- **Injeção de Dependência:** Uso de interfaces (`SteamApiInterface`) para permitir a troca fácil entre o provedor real e o provedor de demonstração.
-- **Portabilidade:** Helper de URL para garantir que o projeto funcione em subdiretórios ou via PHP built-in server sem ajustes manuais.
+O projeto é estruturado em torno de princípios de separação de responsabilidades (Layered Architecture):
 
-## 🛠️ Stack Técnica
+- **Infrastructure:** O `SteamApiClient` encapsula a biblioteca Guzzle e lida exclusivamente com comunicação HTTP, parsing básico e lançamento de Exceções de Domínio (ex: `UserNotFoundException`).
+- **Services:** O `SteamApiService` orquestra a lógica: verifica cache, chama a infraestrutura, processa promises e monta DTOs (`SteamGame`, `SteamProfile`). O `GameCatalogService` isola as regras de negócio para ordenação e filtro.
+- **Controllers & Views:** O `DashboardController` atua como um coordenador simples, recebendo o request, delegando aos serviços e populando o View Model para a renderização em `views/dashboard.php`.
+- **Front Controller:** `public/index.php` serve como ponto de entrada único, centralizando o *bootstrap* e a injeção manual de dependências.
 
-- **Linguagem:** PHP 8.2+ (Tipagem estrita)
-- **HTTP Client:** GuzzleHTTP
-- **Ambiente:** PHP Dotenv
-- **Frontend:** Vanilla CSS (Moderno, com suporte a Dark Mode) e JavaScript.
-- **Gerenciador de Dependências:** Composer
+## Stack Utilizada
 
-## ⚙️ Configuração Local
+- **Linguagem:** PHP 8.2+
+- **Dependências (Composer):** 
+  - `guzzlehttp/guzzle`: Para chamadas HTTP e assincronismo.
+  - `vlucas/phpdotenv`: Para gestão de variáveis de ambiente.
+- **Frontend:** HTML5, CSS3 (Vanilla com custom properties para Theming) e JS mínimo para interatividade.
+- **Testes:** Suíte de testes unitários e de integração nativa (sem PHPUnit, executada via runner próprio).
 
-1. **Clonar o repositório:**
+## Como Executar Localmente
+
+1. **Clone o repositório:**
    ```bash
    git clone https://github.com/AndersonC96/Steam_games.git
    cd Steam_games
    ```
 
-2. **Instalar dependências:**
+2. **Instale as dependências:**
    ```bash
    composer install
    ```
 
-3. **Configurar variáveis de ambiente:**
-   Crie um arquivo `.env` na raiz:
+3. **Configure as variáveis de ambiente:**
+   Crie um arquivo `.env` na raiz do projeto com o seguinte conteúdo:
    ```dotenv
-   STEAM_API_KEY=sua_chave_aqui
+   STEAM_API_KEY=sua_chave_da_steam_api
    STEAM_USERNAME=usuario_padrao_opcional
    ```
 
-4. **Executar o servidor:**
+4. **Inicie o servidor embutido do PHP:**
    ```bash
    php -S localhost:8000
    ```
-   Acesse: `http://localhost:8000`
+   Acesse a aplicação em `http://localhost:8000`.
 
-## 📂 Estrutura de Pastas
+## Executando os Testes
 
-```text
-.
-├── bootstrap/          # Inicialização e carregamento de config
-├── config/             # Configurações centralizadas
-├── public/             # Entrypoint público e assets (CSS/JS)
-├── src/
-│   ├── Controllers/    # Orquestração da requisição
-│   ├── Models/         # DTOs (SteamGame, SteamProfile, etc)
-│   ├── Services/       # Regras de negócio e integrações
-│   └── Support/        # Helpers (Text, Url)
-├── views/              # Templates PHP limpos
-├── tests/              # Suíte de testes (Unitários e Integração)
-└── cache/              # Armazenamento local de payloads JSON
-```
-
-## 🧪 Testes
-
-O projeto conta com uma suíte de testes customizada para validar a lógica de parsing e filtragem:
+Para rodar a suíte de testes do projeto:
 
 ```bash
 php tests/run.php
 ```
 
-## ⚠️ Limitações e Observações
+## Estrutura de Diretórios
 
-- **Rate Limiting:** A Steam Store API é restritiva. O projeto utiliza um limite de processamento de 100 jogos (configurável em `config/app.php`) e cache agressivo para mitigar isso.
-- **Privacidade:** A conta Steam pesquisada deve ter o perfil e a biblioteca configurados como **públicos**.
+```text
+.
+├── bootstrap/          # Inicialização do app e carregamento de env
+├── config/             # Arquivo central de configurações (limites, paths)
+├── public/             # Entrypoint da aplicação e assets estáticos
+├── src/
+│   ├── Controllers/    # Orquestração de rotas/fluxo
+│   ├── Exceptions/     # Exceções de domínio customizadas
+│   ├── Infrastructure/ # Clientes de API externa (Guzzle)
+│   ├── Models/         # DTOs imutáveis (SteamProfile, SteamGame)
+│   ├── Services/       # Regras de negócio e cache
+│   └── Support/        # Helpers estáticos (UrlHelper, TextHelper)
+├── views/              # Camada de apresentação (templates PHP)
+└── tests/              # Testes unitários e de integração
+```
 
-## 📝 Licença
+## Limitações Conhecidas
 
-Este projeto é destinado a fins de estudo e portfólio. Os dados de imagem e marcas pertencem à Valve Corporation.
+- Devido às fortes restrições de *rate limit* da Steam Store API, a aplicação processa detalhes aprofundados para um limite máximo de 50 jogos por perfil (priorizando os mais jogados).
+- Perfis configurados como "Privados" na Steam não expõem a lista de jogos, resultando em uma exceção tratada na interface.
+
+## Licença
+
+Projeto acadêmico e de portfólio. Dados e imagens providos são de propriedade da Valve Corporation.
