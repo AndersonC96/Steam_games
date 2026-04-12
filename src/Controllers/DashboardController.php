@@ -56,7 +56,7 @@ final class DashboardController
 
                 $this->updateSessionMetrics($session, $queryTimeMs, $username, $collection->meta['source'] ?? '');
 
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 $errorMessage = $e->getMessage();
             }
         }

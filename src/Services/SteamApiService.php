@@ -82,50 +82,19 @@ final class SteamApiService implements SteamApiInterface
     private function fetchGamesDetails(string $steamId, array $games, string $apiKey): array
     {
         $details = [];
-        $appIdsToFetch = [];
 
         foreach ($games as $game) {
             $appId = (int) $game['appid'];
-            $cache = $this->cacheService->read('user_game_details', $steamId . '_' . $appId, $this->cacheTtlSeconds);
-            
-            if ($cache) {
-                $details[$appId] = $cache;
-            } else {
-                $appIdsToFetch[] = $appId;
-            }
-        }
 
-        if (!empty($appIdsToFetch)) {
-            $apiResponses = $this->apiClient->getMultipleAppDetailsAsync($appIdsToFetch);
-            
-            foreach ($apiResponses as $appId => $response) {
-                $data = json_decode((string) $response->getBody(), true);
-                $gameDetails = $this->processGameResponse($data, (int) $appId, $steamId, $apiKey);
-                
-                $this->cacheService->write('user_game_details', $steamId . '_' . $appId, $gameDetails);
-                $details[$appId] = $gameDetails;
+            try {
+                $details[$appId] = $this->getGameDetailsOrThrow($appId, $steamId, $apiKey);
+            } catch (\Exception $e) {
+                // Use fallback details if we can't get the game details
+                $details[$appId] = $this->fallbackDetails();
             }
         }
 
         return $details;
-    }
-
-    private function processGameResponse(?array $data, int $appId, string $steamId, string $apiKey): array
-    {
-        if (!isset($data[$appId]['data'])) {
-            return $this->fallbackDetails();
-        }
-
-        $gameData = $data[$appId]['data'];
-        $achievements = $this->apiClient->getPlayerAchievements($steamId, $appId, $apiKey);
-
-        return [
-            'price' => $gameData['price_overview']['final_formatted'] ?? 'Grátis',
-            'description' => $gameData['short_description'] ?? 'Descrição não disponível',
-            'image' => $gameData['header_image'] ?? 'img/padrao.png',
-            'achievements' => $this->formatAchievements($achievements),
-            'release_date' => $gameData['release_date']['date'] ?? 'N/A',
-        ];
     }
 
     private function mapProfile(array $player): SteamProfile
@@ -141,7 +110,10 @@ final class SteamApiService implements SteamApiInterface
     private function formatAchievements(array $data): string
     {
         if (isset($data['playerstats']['achievements'])) {
-            $unlocked = count(array_filter($data['playerstats']['achievements'], fn ($a) => (int)($a['achieved'] ?? 0) === 1));
+            $unlocked = count(array_filter(
+                $data['playerstats']['achievements'],
+                fn ($a) => (int)($a['achieved'] ?? 0) === 1
+            ));
             return $unlocked . ' Conquistas';
         }
         return 'Jogo sem conquistas';
