@@ -161,8 +161,7 @@ final class DashboardController
     private function generateShareUrl(array $server, array $params): string
     {
         $path = strtok((string) ($server['REQUEST_URI'] ?? ''), '?');
-        $cleanParams = array_filter($params, fn($v) => $v !== null && $v !== '');
-        return $path . '?' . http_build_query($cleanParams);
+        return $path . UrlHelper::buildQuery($params);
     }
 
     private function initializeSessionMetrics(array &$session): void
