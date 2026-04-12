@@ -82,19 +82,74 @@ final class SteamApiService implements SteamApiInterface
     private function fetchGamesDetails(string $steamId, array $games, string $apiKey): array
     {
         $details = [];
+        $appsToFetch = [];
 
         foreach ($games as $game) {
             $appId = (int) $game['appid'];
+            $cacheKey = $steamId . '_' . $appId;
+            $cachedResult = $this->cacheService->read('user_game_details', $cacheKey, $this->cacheTtlSeconds);
 
-            try {
-                $details[$appId] = $this->getGameDetailsOrThrow($appId, $steamId, $apiKey);
-            } catch (\Exception $e) {
-                // Use fallback details if we can't get the game details
-                $details[$appId] = $this->fallbackDetails();
+            if ($cachedResult !== null) {
+                $details[$appId] = $cachedResult;
+            } else {
+                $appsToFetch[] = $appId;
+            }
+        }
+
+        if (!empty($appsToFetch)) {
+            $parallelResults = $this->fetchDetailsInParallel($steamId, $appsToFetch, $apiKey);
+            foreach ($parallelResults as $appId => $data) {
+                $details[$appId] = $data;
+                $this->cacheService->write('user_game_details', $steamId . '_' . $appId, $data);
             }
         }
 
         return $details;
+    }
+
+    private function fetchDetailsInParallel(string $steamId, array $appIds, string $apiKey): array
+    {
+        $results = [];
+        $appPromises = [];
+        $achievementPromises = [];
+
+        foreach ($appIds as $appId) {
+            $appPromises[$appId] = $this->apiClient->getAppDetailsAsync($appId);
+            $achievementPromises[$appId] = $this->apiClient->getPlayerAchievementsAsync($steamId, $appId, $apiKey);
+        }
+
+        try {
+            $appResponses = \GuzzleHttp\Promise\Utils::unwrap($appPromises);
+            $achievementResponses = \GuzzleHttp\Promise\Utils::unwrap($achievementPromises);
+
+            foreach ($appIds as $appId) {
+                $response = $appResponses[$appId];
+                $data = json_decode((string) $response->getBody(), true);
+
+                if (!isset($data[$appId]['data'])) {
+                    $results[$appId] = $this->fallbackDetails();
+                    continue;
+                }
+
+                $gameData = $data[$appId]['data'];
+                $achievements = json_decode((string) $achievementResponses[$appId]->getBody(), true) ?? [];
+
+                $results[$appId] = [
+                    'price' => $gameData['price_overview']['final_formatted'] ?? 'Grátis',
+                    'description' => $gameData['short_description'] ?? 'Descrição não disponível',
+                    'image' => $gameData['header_image'] ?? 'img/padrao.png',
+                    'achievements' => $this->formatAchievements($achievements),
+                    'release_date' => $gameData['release_date']['date'] ?? 'N/A',
+                ];
+            }
+        } catch (\Throwable $e) {
+            // Se falhar o lote, volta para o fallback unitário para cada app que falhou
+            foreach ($appIds as $appId) {
+                $results[$appId] = $this->fallbackDetails();
+            }
+        }
+
+        return $results;
     }
 
     private function mapProfile(array $player): SteamProfile
@@ -128,56 +183,6 @@ final class SteamApiService implements SteamApiInterface
             'achievements' => 'Jogo sem conquistas',
             'release_date' => 'N/A',
         ];
-    }
-
-    /**
-     * @throws \Exception If game details cannot be retrieved
-     */
-    private function getGameDetailsOrThrow(int $appId, string $steamId, string $apiKey): array
-    {
-        $details = $this->fetchSingleGameDetails($appId, $steamId, $apiKey);
-
-        if ($details === null) {
-            throw new \Exception("Não foi possível obter detalhes para o jogo ID: {$appId}");
-        }
-
-        return $details;
-    }
-
-    private function fetchSingleGameDetails(int $appId, string $steamId, string $apiKey): ?array
-    {
-        $cacheKey = $steamId . '_' . $appId;
-        $cachedResult = $this->cacheService->read('user_game_details', $cacheKey, $this->cacheTtlSeconds);
-
-        if ($cachedResult !== null) {
-            return $cachedResult;
-        }
-
-        try {
-            $apiResponse = $this->apiClient->getAppDetails($appId);
-            $data = json_decode((string) $apiResponse->getBody(), true);
-
-            if (!isset($data[$appId]['data'])) {
-                return null;
-            }
-
-            $gameData = $data[$appId]['data'];
-            $achievements = $this->apiClient->getPlayerAchievements($steamId, $appId, $apiKey);
-
-            $gameDetails = [
-                'price' => $gameData['price_overview']['final_formatted'] ?? 'Grátis',
-                'description' => $gameData['short_description'] ?? 'Descrição não disponível',
-                'image' => $gameData['header_image'] ?? 'img/padrao.png',
-                'achievements' => $this->formatAchievements($achievements),
-                'release_date' => $gameData['release_date']['date'] ?? 'N/A',
-            ];
-
-            $this->cacheService->write('user_game_details', $cacheKey, $gameDetails);
-            return $gameDetails;
-        } catch (\Exception $e) {
-            // Log the exception if logging is available
-            return null;
-        }
     }
 
     private function formatPlaytime(int $minutes): string

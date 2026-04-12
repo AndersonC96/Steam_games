@@ -48,7 +48,12 @@ final class DashboardController
             } catch (\Throwable $e) {
                 // Catch any unexpected error to prevent crashing the view
                 $errorMessage = "Ocorreu um erro interno inesperado ao processar a busca.";
-                // In a real system, we would log $e->getMessage() here
+                error_log("Steam Games Error: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+                
+                // Em desenvolvimento, podemos querer ver o erro real
+                if (($_ENV['APP_DEBUG'] ?? 'false') === 'true') {
+                    $errorMessage .= " Detalhes: " . $e->getMessage();
+                }
             }
         }
 

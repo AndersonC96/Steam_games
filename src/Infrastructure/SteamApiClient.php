@@ -97,6 +97,29 @@ final class SteamApiClient
         ]);
     }
 
+    public function getPlayerAchievementsAsync(string $steamId, int $appId, string $apiKey): \GuzzleHttp\Promise\PromiseInterface
+    {
+        return $this->client->requestAsync('GET', 'https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/', [
+            'query' => [
+                'key' => $apiKey,
+                'steamid' => $steamId,
+                'appid' => $appId,
+            ]
+        ]);
+    }
+
+    public function getAppDetails(int $appId): \Psr\Http\Message\ResponseInterface
+    {
+        return $this->getAppDetailsAsync($appId)->wait();
+    }
+
+    public function getAppDetailsAsync(int $appId): \GuzzleHttp\Promise\PromiseInterface
+    {
+        return $this->client->requestAsync('GET', 'https://store.steampowered.com/api/appdetails', [
+            'query' => ['appids' => $appId, 'l' => 'brazilian']
+        ]);
+    }
+
     private function getJson(string $url, array $query): array
     {
         try {
