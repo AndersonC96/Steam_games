@@ -2,8 +2,6 @@
 
 Uma aplicação PHP enxuta para análise e visualização de bibliotecas da Steam. O objetivo deste projeto é demonstrar a construção de uma integração resiliente com APIs externas, manipulação de dados assíncrona e estratégias de cache, sem a dependência de frameworks pesados.
 
-![Steam Logo](https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Steam_icon_logo.svg/1024px-Steam_icon_logo.svg.png)
-
 ## Visão Geral
 
 O projeto resolve o perfil de um usuário (via SteamID ou Vanity URL), agrega seu catálogo de jogos consumindo a Steam Web API e a Steam Store API, e apresenta uma interface para filtragem, ordenação e compartilhamento de estado.
@@ -41,7 +39,7 @@ O projeto é estruturado em torno de princípios de separação de responsabilid
 
 1. **Clone o repositório:**
    ```bash
-   git clone https://github.com/AndersonC96/Steam_games.git
+   git clone https://github.com/AndersonCav/Steam_games.git
    cd Steam_games
    ```
 
